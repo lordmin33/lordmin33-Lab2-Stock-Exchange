@@ -7,6 +7,9 @@ data SkewHeap a = Empty
 ivariant :: Ord a => a -> SkewHeap a
 ivariant a = 
 
+singleton :: Ord a => a -> SkewHeap a
+singleton x = node x Empty Empty
+
 merge :: Ord a =>  SkewHeap a -> SkewHeap a -> SkewHeap a
 merge sh1 sh2 = undefined
 
