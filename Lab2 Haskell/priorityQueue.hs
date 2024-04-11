@@ -1,3 +1,6 @@
+module Lab2 where
+
+
 data SkewHeap a = Empty
                 | Node a (SkewHeap a) (SkewHeap a)
 
