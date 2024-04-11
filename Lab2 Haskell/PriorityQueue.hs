@@ -19,7 +19,6 @@ insert a sh = undefined
 extracte_min :: Ord a => SkewHeap a -> SkewHeap a 
 extracte_min sh = undefined
 
-
 delete :: Ord a => SkewHeap a -> SkewHeap a 
 delete sh = undefined
 
