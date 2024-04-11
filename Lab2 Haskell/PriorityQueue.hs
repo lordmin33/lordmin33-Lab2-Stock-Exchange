@@ -11,10 +11,12 @@ singleton :: Ord a => a -> SkewHeap a
 singleton x = node x Empty Empty
 
 merge :: Ord a =>  SkewHeap a -> SkewHeap a -> SkewHeap a
-merge sh1 sh2 = undefined
+merge sh1 Empty = sh1 
+merge Empty sh2 = sh2 
+merge sh1 sh2 
 
 insert :: Ord a => a -> SkewHeap a -> SkewHeap a 
-insert a sh = undefined
+insert a sh = merge singleton x sh 
 
 extracte_min :: Ord a => SkewHeap a -> SkewHeap a 
 extracte_min sh = undefined
