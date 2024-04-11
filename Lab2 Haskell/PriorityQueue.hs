@@ -5,7 +5,7 @@ data SkewHeap a = Empty
 
 -- should make sure value can't be changed
 ivariant :: Ord a => a -> SkewHeap a
-ivariant a = 
+ivariant a = undefined
 
 singleton :: Ord a => a -> SkewHeap a
 singleton x = node x Empty Empty
