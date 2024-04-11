@@ -1,19 +1,20 @@
 module Lab2 where
 
-
 data SkewHeap a = Empty
                 | Node a (SkewHeap a) (SkewHeap a)
 
+ivariant :: Ord a => a -> SkewHeap a
+ivariant a = a
 
 merge :: Ord a ->  SkewHeap a -> SkewHeap a -> SkewHeap a
-merge = undefined
+merge sh1 sh2 = undefined
 
-add_value :: Ord a -> a -> SkewHeap a -> SkewHeap a 
-add_value = undefined
+insert :: Ord a -> a -> SkewHeap a -> SkewHeap a 
+insert a sh = undefined
 
-delete_min :: Ord a -> SkewHeap a -> SkewHeap a 
-delete_min = undefined
+extracte_min :: Ord a -> SkewHeap a -> SkewHeap a 
+extracte_min sh = undefined
 
 
 delete :: Ord a -> SkewHeap a -> SkewHeap a 
-delete = undefined
+delete sh = undefined
