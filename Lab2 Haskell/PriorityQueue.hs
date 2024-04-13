@@ -1,4 +1,7 @@
-module Lab2 where
+module PriorityQueue where
+
+import Lab2
+
 
 data SkewHeap a = Empty
                 | Node a (SkewHeap a) (SkewHeap a) deriving (Show, Eq)

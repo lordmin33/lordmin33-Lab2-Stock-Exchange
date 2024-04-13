@@ -1,9 +1,18 @@
+module TheOrderBook where
+
+import PriorityQueue
+import Lab2
+
+data OrderBook a = Empty 
+                | 
 
 
+buyBid :: SkewHeap Bid
+buyBid = undefined
+
+sellBid :: SkewHeap Bid
+sellBid = undefined
 
 
-BuyBid = undefined
-
-SellBid = undefined
-
-OrderBook -> [Bid] -> IO
+helperFunction :: OrderBook -> [Bid] -> IO
+helperFunction = undefined

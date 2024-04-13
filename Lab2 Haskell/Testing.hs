@@ -1,3 +1,7 @@
 -- where we make tests for Lab2
 
-module Lab2, PriorityQueue where
+module Testing where
+
+import Lab2
+import PriorityQueue
+import TheOrderBook
