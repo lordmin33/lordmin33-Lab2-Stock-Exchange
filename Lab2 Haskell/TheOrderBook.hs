@@ -4,7 +4,7 @@ import PriorityQueue
 import Lab2
 
 data OrderBook a = Empty 
-                | 
+                | Node (SkewHeap a)
 
 
 buyBid :: SkewHeap Bid
