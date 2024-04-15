@@ -15,6 +15,7 @@ d = Node 6 Empty (Node 1 Empty Empty)
 ivariant :: Ord a => a -> SkewHeap a 
 ivariant a = undefined
 
+-- used when inserting a new element to the heap
 singleton :: Ord a => a -> SkewHeap a
 singleton x = Node x Empty Empty
 
