@@ -1,3 +1,5 @@
+module Lab2 where
+
 import Control.Applicative
 import System.Environment
 import System.IO
