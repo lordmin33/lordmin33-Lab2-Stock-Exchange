@@ -2,7 +2,7 @@ module PriorityQueue where
 
 import Lab2
 
-
+-- Add a  heap sort so that the skewheap is implemented correctly
 data SkewHeap a = Empty
                 | Node a (SkewHeap a) (SkewHeap a) deriving (Show, Eq)
 -- test data
