@@ -8,8 +8,8 @@ data SkewHeap a = Empty
 -- test data
 a = Node 2 Empty Empty
 b = Node 6 Empty Empty
-c = Node 3 (Node 6 Empty Empty) Empty
-d = Node 6 Empty (Node 1 Empty Empty)
+c = Node 3 (Node 6 (Node 8 Empty Empty) (Node 12 Empty Empty)) (Node 4 (Node 16 Empty Empty) (Node 17 Empty Empty))
+d = Node 6 Empty (Node 8 Empty Empty)
 
 -- should make sure value can't be changed
 ivariant :: Ord a => a -> SkewHeap a 
@@ -35,8 +35,11 @@ insert :: Ord a => a -> SkewHeap a -> SkewHeap a
 insert x sh = merge (singleton x) sh 
 
 extracte_min :: Ord a => SkewHeap a -> SkewHeap a 
-extracte_min h@(Node x l r ) = undefined
+extracte_min h@(Node x l r ) = merge l r
 
-delete :: Ord a => SkewHeap a -> SkewHeap a 
-delete h = undefined
-
+delete :: Ord a => a -> SkewHeap a -> SkewHeap a 
+delete _ Empty = Empty
+delete y h@(Node x l r) 
+    | y == x          = (merge l r)
+    | y > x           = Node x (delete y l) (delete y r)
+    |otherwise        = h
