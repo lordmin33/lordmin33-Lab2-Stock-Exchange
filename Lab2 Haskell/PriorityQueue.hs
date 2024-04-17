@@ -31,7 +31,6 @@ merge h1@(Node x1 l1 r1) h2@(Node x2 l2 r2)
     | x1 <= x2  = Node x1 (merge r1 h2) l1
     | otherwise = Node x2 (merge r2 h1) l2
 
-
 -- inserts values into the heap using the singleton method
 insert :: Ord a => a -> SkewHeap a -> SkewHeap a 
 insert x sh = merge (singleton x) sh 
