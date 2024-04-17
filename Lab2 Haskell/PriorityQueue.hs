@@ -45,3 +45,9 @@ delete y h@(Node x l r)
     | y == x          = (merge l r)
     | y > x           = Node x (delete y l) (delete y r)
     |otherwise        = h
+
+update :: Ord a => a -> a -> SkewHeap a -> SkewHeap a
+update x y Empty = Empty
+update x y sh 
+    | delete x sh == sh = sh 
+    | otherwise         = insert y (delete x sh)  
