@@ -34,8 +34,8 @@ merge h1@(Node x1 l1 r1) h2@(Node x2 l2 r2)
 insert :: Ord a => a -> SkewHeap a -> SkewHeap a 
 insert x sh = merge (singleton x) sh 
 
-extracte_min :: Ord a => SkewHeap a -> SkewHeap a 
-extracte_min h@(Node x l r ) = merge l r
+extract_min :: Ord a => SkewHeap a -> SkewHeap a 
+extract_min h@(Node x l r ) = merge l r
 
 delete :: Ord a => a -> SkewHeap a -> SkewHeap a 
 delete _ Empty = Empty
