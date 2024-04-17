@@ -3,15 +3,14 @@ module TheOrderBook where
 import PriorityQueue
 import Lab2
 
+-- defently  wrong
 data OrderBook a = Empty 
                 | Node (SkewHeap a)
 
 
-buyBid :: SkewHeap Bid
-buyBid = undefined
+type BuyBid a = BuyBid (SkewHeap a)
+type SellBid a = SellBid (SkewHeap a)
 
-sellBid :: SkewHeap Bid
-sellBid = undefined
 
 
 helperFunction :: OrderBook -> [Bid] -> IO
