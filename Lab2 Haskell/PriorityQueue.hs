@@ -1,6 +1,3 @@
-
-
-
 module PriorityQueue where
 
 import Lab2
@@ -34,6 +31,8 @@ merge h1@(Node x1 l1 r1) h2@(Node x2 l2 r2)
     | x1 <= x2  = Node x1 (merge r1 h2) l1
     | otherwise = Node x2 (merge r2 h1) l2
 
+
+-- inserts values into the heap using the singleton method
 insert :: Ord a => a -> SkewHeap a -> SkewHeap a 
 insert x sh = merge (singleton x) sh 
 
@@ -44,12 +43,6 @@ extractMin h@(Node x l r ) = merge l r
 extractMin2 :: Ord a => SkewHeap a -> Maybe (a, SkewHeap a)
 extractMin2 Empty        = Nothing
 extractMin2 (Node x l r) = Just (x, merge l r)
--- inserts values into the heap using the singleton method
-insert :: Ord a => a -> SkewHeap a -> SkewHeap a 
-insert x sh = merge (singleton x) sh 
-
-extract_min :: Ord a => SkewHeap a -> SkewHeap a 
-extract_min h@(Node x l r ) = merge l r
 
 -- deletes the first instance of a specific value in the heap
 delete :: Ord a => a -> SkewHeap a -> SkewHeap a 
