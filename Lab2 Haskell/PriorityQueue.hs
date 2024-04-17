@@ -1,6 +1,6 @@
 module PriorityQueue where
 
-import Lab2
+
 
 -- Add a  heap sort so that the skewheap is implemented correctly
 data SkewHeap a = Empty

@@ -3,7 +3,8 @@ module Lab2 where
 import Control.Applicative
 import System.Environment
 import System.IO
---import PriorityQueue
+import PriorityQueue
+--import TheOrderBook
 -- | Bids.
 
 data Bid
