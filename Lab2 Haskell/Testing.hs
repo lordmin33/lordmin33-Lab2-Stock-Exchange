@@ -4,7 +4,6 @@ module Testing where
 
 import Lab2
 import PriorityQueue
-import TheOrderBook
 
 
 invariant :: Ord a => SkewHeap a -> Bool

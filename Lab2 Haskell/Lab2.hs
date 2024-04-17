@@ -17,6 +17,27 @@ data Bid
 type Person = String
 type Price = Integer
 
+data BuyBid = BuyBid {
+  buyBi :: Buy
+}
+
+data SellBid = SellBid {
+  sellBi :: Sell
+}
+
+type BuyOrder  = SkewHeap BuyBid
+type SellOrder = SkewHeap SellBid
+
+data OrderBook = OrderBook { buyBid :: BuyOrder,
+                            sellBid ::  SellOrder }
+
+--instance Ord BuyBid where
+--    Compare BuyBid BuyBid = EQ
+--    Compare BuyBid BuyBid = LT
+--    Compare BuyBid BuyBid = LT
+
+
+
 -- | Parses a bid. Incorrectly formatted bids are returned verbatim
 -- (tagged with 'Left').
 
@@ -67,3 +88,7 @@ main = do
 
 trade :: [Bid] -> IO ()
 trade = undefined
+
+
+helperFunction :: OrderBook -> [Bid] -> IO()
+helperFunction = undefined
