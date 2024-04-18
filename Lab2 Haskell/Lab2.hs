@@ -12,26 +12,33 @@ data Bid
   | Sell Person Price          -- Person offers to sell share
   | NewBuy Person Price Price  -- Person changes buy bid
   | NewSell Person Price Price -- Person changes sell bid
-  deriving Show
+  deriving (Show, Eq)
+
 
 type Person = String
 type Price = Integer
 
-data BuyBid = BuyBid {
-  buyBi :: Bid
-}
 
-data SellBid = SellBid {
-  sellBi :: Bid
-}
+type BuyBid  = SkewHeap Bid
+type SellBid = SkewHeap Bid
 
-type BuyOrder  = SkewHeap BuyBid
-type SellOrder = SkewHeap SellBid
+instance Ord BuyBid where
+  compare Empty Empty = EQ
+  compare Empty _ = LT
+  compare _ Empty = GT
+  compare (Node (Buy _ price1) _ _) (Node (Buy _ price2) _ _) = compare price1 price2
 
-instance Ord BuyOrder
 
-data OrderBook = OrderBook { buyBid :: BuyOrder,
-                            sellBid ::  SellOrder }
+instance Ord SellBid where
+  compare Empty Empty = EQ
+  compare Empty _ = LT
+  compare _ Empty = GT
+  compare (Node (Sell _ price1) _ _) (Node (Sell _ price2) _ _) = compare price1 price2
+  
+
+
+data OrderBook = OrderBook { buyBid :: BuyBid,
+                            sellBid ::  SellBid }
 
 --instance Ord BuyBid where
 --    Compare BuyBid BuyBid = EQ
