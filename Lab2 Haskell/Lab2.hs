@@ -7,7 +7,6 @@ import System.IO
 import PriorityQueue
 --import TheOrderBook
 -- | Bids.
-
 data Bid
   = Buy Person Price           -- Person offers to buy share
   | Sell Person Price          -- Person offers to sell share
@@ -23,13 +22,21 @@ type Price = Integer
 type BuyBid  = SkewHeap Bid
 type SellBid = SkewHeap Bid
 
-instance Ord (SkewHeap Bid) where
-  compare Empty Empty = EQ
-  compare Empty _ = LT
-  compare _ Empty = GT
-  compare (Node (Buy _ price1) _ _) (Node (Buy _ price2) _ _) = compare price1 price2
-  compare (Node (Sell _ price1) _ _) (Node (Sell _ price2) _ _) = compare price1 price2
+instance Ord Bid where
+  compare (Buy _ price1) (Buy _ price2) = compare price1 price2
+  compare (Buy _ _) (Sell _ _) = LT
+  compare (Buy _ _) (NewBuy _ _ _) = LT
+  compare (Buy _ _) (NewSell _ _ _) = LT
+  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
+  compare (Sell _ _) (NewBuy _ _ _) = LT
+  compare (Sell _ _) (NewSell _ _ _) = LT
+  compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
+  compare (NewBuy _ _ _) (Buy _ _) = GT
+  compare (NewBuy _ _ _) (Sell _ _) = GT
+  compare (NewSell _ _ _) (Buy _ _) = GT
+  compare (NewSell _ _ _) (Sell _ _) = GT
 
+x = (Node (Buy "a" 2) (Node (Buy "b" 5) Empty Empty) (Node (Buy "c" 2) Empty Empty))
 
 {-instance Ord BuyBid where
   compare Empty Empty = EQ
@@ -46,8 +53,9 @@ instance Ord SellBid where
 -}  
 
 
-data OrderBook = OrderBook { buyBid :: BuyBid,
-                            sellBid ::  SellBid }
+data OrderBook = OrderBook { 
+  buyBid :: BuyBid,
+  sellBid ::  SellBid }
 
 
 -- | Parses a bid. Incorrectly formatted bids are returned verbatim
@@ -104,22 +112,37 @@ trade bids = do
   orderBook initialState bids
   where 
     initialState = OrderBook { buyBid = Empty, sellBid = Empty }
-  
-
 
 orderBook :: OrderBook -> [Bid] -> IO()
 orderBook book bids = do
-
-  let finalOrderBook = process book bids
+  let finalOrderBook = processBids book bids
   
   putStrLn "Order book:"
   putStrLn "Sellers: " >> printBids (sellBid finalOrderBook)
   putStrLn "Buyers: " >> printBids (buyBid finalOrderBook)
-    where
-      process = undefined
+
+
+
+processBids :: Bid -> OrderBook -> OrderBook 
+case bid of
+    Buy person price -> processBuy book person price
+    Sell person price -> processSell book person price
+    NewBuy person oldPrice newPrice -> processNewBuy book person oldPrice newPrice
+    NewSell person oldPrice newPrice -> processNewSell book person oldPrice newPrice
+
+processBuys :: OrderBook -> Bid -> OrderBook
+processBuys book@(OrderBook buy sell) bid = undefined
+  
+processSells :: OrderBook -> Bid -> OrderBook
+processSells book@(OrderBook buy sell) bid = undefined
+  
+processNewBuy :: OrderBook -> Bid -> OrderBook
+processNewBuy book@(OrderBook buy sell) bid = undefined
+  
+processNewSell :: OrderBook -> Bid -> OrderBook
+processNewSell book@(OrderBook buy sell) bid = undefined
 
 printBids :: SkewHeap Bid -> IO ()
---printBids sh = undefined
 printBids sh =  putStr(listToString (toSortedList sh))
 
 
