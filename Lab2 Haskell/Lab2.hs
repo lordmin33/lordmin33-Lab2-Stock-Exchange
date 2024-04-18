@@ -103,23 +103,25 @@ trade bids = do
 
   orderBook initialState bids
   where 
-    initialState = OrderBook { buyBid = empty, sellBid = empty }
+    initialState = OrderBook { buyBid = Empty, sellBid = Empty }
   
 
 
 orderBook :: OrderBook -> [Bid] -> IO()
 orderBook book bids = do
 
-  let finalOrderBook = ??? book bids
+  let finalOrderBook = process book bids
   
   putStrLn "Order book:"
   putStrLn "Sellers: " >> printBids (sellBid finalOrderBook)
   putStrLn "Buyers: " >> printBids (buyBid finalOrderBook)
-
-listToString :: Show a => [a] -> String
-listToString xs = concat $ map show xs
-
+    where
+      process = undefined
 
 printBids :: SkewHeap Bid -> IO ()
 --printBids sh = undefined
-printBids sh =  putStr( listToString (toSortedList sh))
+printBids sh =  putStr(listToString (toSortedList sh))
+
+
+listToString :: Show a => [a] -> String
+listToString xs = concat $ map show xs
