@@ -40,12 +40,6 @@ instance Ord SellBid where
 data OrderBook = OrderBook { buyBid :: BuyBid,
                             sellBid ::  SellBid }
 
---instance Ord BuyBid where
---    Compare BuyBid BuyBid = EQ
---    Compare BuyBid BuyBid = LT
---    Compare BuyBid BuyBid = LT
-
-
 
 -- | Parses a bid. Incorrectly formatted bids are returned verbatim
 -- (tagged with 'Left').
