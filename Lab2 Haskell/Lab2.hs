@@ -18,15 +18,17 @@ type Person = String
 type Price = Integer
 
 data BuyBid = BuyBid {
-  buyBi :: Buy
+  buyBi :: Bid
 }
 
 data SellBid = SellBid {
-  sellBi :: Sell
+  sellBi :: Bid
 }
 
 type BuyOrder  = SkewHeap BuyBid
 type SellOrder = SkewHeap SellBid
+
+instance Ord BuyOrder
 
 data OrderBook = OrderBook { buyBid :: BuyOrder,
                             sellBid ::  SellOrder }
@@ -90,5 +92,5 @@ trade :: [Bid] -> IO ()
 trade = undefined
 
 
-helperFunction :: OrderBook -> [Bid] -> IO()
-helperFunction = undefined
+orderBook :: OrderBook -> [Bid] -> IO()
+orderBook = undefined
