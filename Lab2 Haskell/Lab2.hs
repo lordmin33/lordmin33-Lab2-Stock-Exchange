@@ -1,5 +1,6 @@
 module Lab2 where
 
+import Data.List 
 import Control.Applicative
 import System.Environment
 import System.IO
@@ -97,9 +98,28 @@ main = do
 
 -- | The core of the program. Takes a list of bids and executes them.
 
-trade :: [Bid] -> IO ()
-trade = undefined
+trade :: [Bid] -> IO()
+trade bids = do
+
+  orderBook initialState bids
+  where 
+    initialState = OrderBook { buyBid = empty, sellBid = empty }
+  
 
 
 orderBook :: OrderBook -> [Bid] -> IO()
-orderBook = undefined
+orderBook book bids = do
+
+  let finalOrderBook = ??? book bids
+  
+  putStrLn "Order book:"
+  putStrLn "Sellers: " >> printBids (sellBid finalOrderBook)
+  putStrLn "Buyers: " >> printBids (buyBid finalOrderBook)
+
+listToString :: Show a => [a] -> String
+listToString xs = concat $ map show xs
+
+
+printBids :: SkewHeap Bid -> IO ()
+--printBids sh = undefined
+printBids sh =  putStr( listToString (toSortedList sh))
