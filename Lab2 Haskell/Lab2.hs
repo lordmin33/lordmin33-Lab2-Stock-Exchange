@@ -22,7 +22,15 @@ type Price = Integer
 type BuyBid  = SkewHeap Bid
 type SellBid = SkewHeap Bid
 
-instance Ord BuyBid where
+instance Ord (SkewHeap Bid) where
+  compare Empty Empty = EQ
+  compare Empty _ = LT
+  compare _ Empty = GT
+  compare (Node (Buy _ price1) _ _) (Node (Buy _ price2) _ _) = compare price1 price2
+  compare (Node (Sell _ price1) _ _) (Node (Sell _ price2) _ _) = compare price1 price2
+
+
+{-instance Ord BuyBid where
   compare Empty Empty = EQ
   compare Empty _ = LT
   compare _ Empty = GT
@@ -34,7 +42,7 @@ instance Ord SellBid where
   compare Empty _ = LT
   compare _ Empty = GT
   compare (Node (Sell _ price1) _ _) (Node (Sell _ price2) _ _) = compare price1 price2
-  
+-}  
 
 
 data OrderBook = OrderBook { buyBid :: BuyBid,
