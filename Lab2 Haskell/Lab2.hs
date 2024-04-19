@@ -6,6 +6,7 @@ import System.Environment
 import System.IO
 import PriorityQueue
 --import TheOrderBook
+
 -- | Bids.
 data Bid
   = Buy Person Price           -- Person offers to buy share
@@ -14,13 +15,16 @@ data Bid
   | NewSell Person Price Price -- Person changes sell bid
   deriving (Show, Eq)
 
-
 type Person = String
 type Price = Integer
 
-
 type BuyBid  = SkewHeap Bid
 type SellBid = SkewHeap Bid
+
+data OrderBook = OrderBook { 
+  buyBid  :: BuyBid,
+  sellBid :: SellBid 
+  }
 
 instance Ord Bid where
   compare (Buy _ price1) (Buy _ price2) = compare price1 price2
@@ -52,10 +56,6 @@ instance Ord SellBid where
   compare (Node (Sell _ price1) _ _) (Node (Sell _ price2) _ _) = compare price1 price2
 -}  
 
-
-data OrderBook = OrderBook { 
-  buyBid  :: BuyBid,
-  sellBid :: SellBid }
 
 
 -- | Parses a bid. Incorrectly formatted bids are returned verbatim
@@ -125,16 +125,17 @@ orderBook book bids = do
 processBids :: OrderBook -> [Bid] -> OrderBook 
 processBids book [] = book 
 processBids book (bid:rest) = case bid of 
-    Buy person price -> processBuys book bid 
-    Sell person price -> processSells book bid 
-    NewBuy person oldPrice newPrice -> processNewBuy book bid
-    NewSell person oldPrice newPrice -> processNewSell book bid
+    Buy person price                  -> processBids (processBuys book bid ) rest
+    Sell person price                 -> processBids (processSells book bid) rest 
+    NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
+    NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
 
 processBuys :: OrderBook -> Bid -> OrderBook
 processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
-      book {buyBid = insert (Buy person price) (buyBid book)}
-  
-  
+  --if price == (book sell)
+  -- else
+  book {buyBid = insert (Buy person price) (buyBid book)}
+
 processSells :: OrderBook -> Bid -> OrderBook
 processSells book@(OrderBook buy sell) bid@(Sell person price) = 
   book {sellBid = insert (Sell person price) (sellBid book)}
