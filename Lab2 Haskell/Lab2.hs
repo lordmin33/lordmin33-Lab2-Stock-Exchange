@@ -1,6 +1,6 @@
 module Lab2 where
 
-import Data.List 
+--import Data.List 
 import Control.Applicative
 import System.Environment
 import System.IO
@@ -54,8 +54,8 @@ instance Ord SellBid where
 
 
 data OrderBook = OrderBook { 
-  buyBid :: BuyBid,
-  sellBid ::  SellBid }
+  buyBid  :: BuyBid,
+  sellBid :: SellBid }
 
 
 -- | Parses a bid. Incorrectly formatted bids are returned verbatim
@@ -108,12 +108,13 @@ main = do
 
 trade :: [Bid] -> IO()
 trade bids = do
-
-  orderBook initialState bids
+  let initialState = OrderBook { buyBid = Empty, sellBid = Empty }
+  orderBook initialState' bids
   where 
-    initialState = OrderBook { buyBid = Empty, sellBid = Empty }
+    initialState' = OrderBook { buyBid = Empty, sellBid = Empty }
 
 orderBook :: OrderBook -> [Bid] -> IO()
+--orderBook book [] = book
 orderBook book bids = do
   let finalOrderBook = processBids book bids
   
@@ -121,30 +122,36 @@ orderBook book bids = do
   putStrLn "Sellers: " >> printBids (sellBid finalOrderBook)
   putStrLn "Buyers: " >> printBids (buyBid finalOrderBook)
 
-
-
-processBids :: Bid -> OrderBook -> OrderBook 
-case bid of
-    Buy person price -> processBuy book person price
-    Sell person price -> processSell book person price
-    NewBuy person oldPrice newPrice -> processNewBuy book person oldPrice newPrice
-    NewSell person oldPrice newPrice -> processNewSell book person oldPrice newPrice
+processBids :: OrderBook -> [Bid] -> OrderBook 
+processBids book [] = book 
+processBids book (bid:rest) = case bid of 
+    Buy person price -> processBuys book bid 
+    Sell person price -> processSells book bid 
+    NewBuy person oldPrice newPrice -> processNewBuy book bid
+    NewSell person oldPrice newPrice -> processNewSell book bid
 
 processBuys :: OrderBook -> Bid -> OrderBook
-processBuys book@(OrderBook buy sell) bid = undefined
+processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
+      book {buyBid = insert (Buy person price) (buyBid book)}
+  
   
 processSells :: OrderBook -> Bid -> OrderBook
-processSells book@(OrderBook buy sell) bid = undefined
+processSells book@(OrderBook buy sell) bid@(Sell person price) = 
+  book {sellBid = insert (Sell person price) (sellBid book)}
   
 processNewBuy :: OrderBook -> Bid -> OrderBook
-processNewBuy book@(OrderBook buy sell) bid = undefined
-  
+processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
+ let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
+   in (book {buyBid = insert (Buy person newPrice) updatedBuyBid})
+
 processNewSell :: OrderBook -> Bid -> OrderBook
-processNewSell book@(OrderBook buy sell) bid = undefined
+processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
+  let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
+   in (book {sellBid = insert (Sell person newPrice) updatedSellBid})
+
 
 printBids :: SkewHeap Bid -> IO ()
 printBids sh =  putStr(listToString (toSortedList sh))
-
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ map show xs

@@ -38,7 +38,7 @@ processBid :: OrderBook -> Bid -> (OrderBook, Maybe String)
 processBid book bid =
   case bid of
     Buy person price -> processBuy book person price
-    Sell person price -> processSell book person price
+    Sell person price -> processSell book person pric
     NewBuy person oldPrice newPrice -> processNewBuy book person oldPrice newPrice
     NewSell person oldPrice newPrice -> processNewSell book person oldPrice newPrice
 
