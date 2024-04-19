@@ -112,7 +112,7 @@ trade bids = do
   orderBook initialState' bids
   where 
     initialState' = OrderBook { buyBid = Empty, sellBid = Empty }
-
+-- Maybe put everything in the book and then 
 orderBook :: OrderBook -> [Bid] -> IO()
 --orderBook book [] = book
 orderBook book bids = do
@@ -132,9 +132,11 @@ processBids book (bid:rest) = case bid of
 
 processBuys :: OrderBook -> Bid -> OrderBook
 processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
-  --if price == (book sell)
+  --if price ==  (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
+  --        "Buyer ++ " buys from " ++ seller ++  " for " price" -- maybe print it out here??
   -- else
   book {buyBid = insert (Buy person price) (buyBid book)}
+
 
 processSells :: OrderBook -> Bid -> OrderBook
 processSells book@(OrderBook buy sell) bid@(Sell person price) = 
@@ -143,12 +145,12 @@ processSells book@(OrderBook buy sell) bid@(Sell person price) =
 processNewBuy :: OrderBook -> Bid -> OrderBook
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
-   in (book {buyBid = insert (Buy person newPrice) updatedBuyBid})
+   in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
 
 processNewSell :: OrderBook -> Bid -> OrderBook
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
   let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
-   in (book {sellBid = insert (Sell person newPrice) updatedSellBid})
+   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
 
 
 printBids :: SkewHeap Bid -> IO ()
