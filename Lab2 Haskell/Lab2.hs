@@ -112,7 +112,7 @@ trade bids = do
   orderBook initialState' bids
   where 
     initialState' = OrderBook { buyBid = Empty, sellBid = Empty }
--- Maybe put everything in the book and then 
+-- Maybe put everything in the book and then check if there exist a buyer for the seller?
 orderBook :: OrderBook -> [Bid] -> IO()
 --orderBook book [] = book
 orderBook book bids = do
