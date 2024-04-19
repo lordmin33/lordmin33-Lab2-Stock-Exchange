@@ -123,12 +123,13 @@ orderBook book bids = do
 
 
 
-processBids :: Bid -> OrderBook -> OrderBook 
-case bid of
-    Buy person price -> processBuy book person price
-    Sell person price -> processSell book person price
-    NewBuy person oldPrice newPrice -> processNewBuy book person oldPrice newPrice
-    NewSell person oldPrice newPrice -> processNewSell book person oldPrice newPrice
+processBids :: OrderBook -> [Bid] -> OrderBook 
+processBids book [] = book 
+processBids book (bid:rest) = case bid of 
+    Buy person price -> processBuys book bid 
+    Sell person price -> processSells book bid 
+    NewBuy person oldPrice newPrice -> processNewBuy book bid
+    NewSell person oldPrice newPrice -> processNewSell book bid
 
 processBuys :: OrderBook -> Bid -> OrderBook
 processBuys book@(OrderBook buy sell) bid = undefined
