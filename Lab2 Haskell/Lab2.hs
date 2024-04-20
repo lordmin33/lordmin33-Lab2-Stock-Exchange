@@ -1,6 +1,6 @@
 module Lab2 where
 
---import Data.List 
+import Data.List hiding (insert, delete)
 import Control.Applicative
 import System.Environment
 import System.IO
@@ -13,7 +13,7 @@ data Bid
   | Sell Person Price          -- Person offers to sell share
   | NewBuy Person Price Price  -- Person changes buy bid
   | NewSell Person Price Price -- Person changes sell bid
-  deriving (Show, Eq)
+  deriving (Eq)
 
 type Person = String
 type Price = Integer
@@ -25,6 +25,11 @@ data OrderBook = OrderBook {
   buyBid  :: BuyBid,
   sellBid :: SellBid 
   }
+
+instance Show Bid where
+  show (Buy person price)       = person ++ " " ++ show price
+  show (Sell person price)      = person ++ " " ++ show price
+ 
 
 instance Ord Bid where
   compare (Buy _ price1) (Buy _ price2) = compare price1 price2
@@ -112,6 +117,7 @@ trade bids = do
   orderBook initialState' bids
   where 
     initialState' = OrderBook { buyBid = Empty, sellBid = Empty }
+
 -- Maybe put everything in the book and then check if there exist a buyer for the seller?
 orderBook :: OrderBook -> [Bid] -> IO()
 --orderBook book [] = book
@@ -119,8 +125,8 @@ orderBook book bids = do
   let finalOrderBook = processBids book bids
   
   putStrLn "Order book:"
-  putStrLn "Sellers: " >> printBids (sellBid finalOrderBook)
-  putStrLn "Buyers: " >> printBids (buyBid finalOrderBook)
+  putStr "Sellers: " >> printBids (sellBid finalOrderBook)
+  putStr "Buyers: " >> printBids (buyBid finalOrderBook)
 
 processBids :: OrderBook -> [Bid] -> OrderBook 
 processBids book [] = book 
@@ -133,7 +139,7 @@ processBids book (bid:rest) = case bid of
 processBuys :: OrderBook -> Bid -> OrderBook
 processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
   --if price ==  (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
-  --        "Buyer ++ " buys from " ++ seller ++  " for " price" -- maybe print it out here??
+  --        "Buyer ++ " buys from " ++ seller ++  " for " price" -- maybe print it out here?? 
   -- else
   book {buyBid = insert (Buy person price) (buyBid book)}
 
@@ -154,7 +160,7 @@ processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) 
 
 
 printBids :: SkewHeap Bid -> IO ()
-printBids sh =  putStr(listToString (toSortedList sh))
+printBids sh =  putStrLn(listToString (toSortedList sh))
 
 listToString :: Show a => [a] -> String
-listToString xs = concat $ map show xs
+listToString xs = concat $ intersperse ", " (map show xs) -- ", "going to appear on the last bidtype

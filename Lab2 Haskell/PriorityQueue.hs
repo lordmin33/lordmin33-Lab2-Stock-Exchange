@@ -27,6 +27,7 @@ insert :: Ord a => a -> SkewHeap a -> SkewHeap a
 insert x sh = merge (singleton x) sh 
 
 --extractMin :: Ord a => SkewHeap a -> SkewHeap a 
+--extractMin Empty = Empty
 --extractMin h@(Node x l r ) = merge l r
 
 -- Extract the minimum value of the heap and merge the rest  
