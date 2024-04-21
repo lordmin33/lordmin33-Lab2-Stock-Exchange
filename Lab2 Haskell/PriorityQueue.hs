@@ -51,6 +51,14 @@ fromSortedList :: Ord a => [a] -> SkewHeap a
 fromSortedList [] = Empty
 fromSortedList xs = foldr (merge . singleton) Empty xs
 
+find :: Ord a => a -> SkewHeap a -> Bool
+find _ Empty = False
+find x (Node y l r)
+    | x == y    = True
+    | x > y     = find x l || find x r
+    | otherwise = False
+
+
 update :: Ord a => a -> a -> SkewHeap a -> SkewHeap a
 update _ _ Empty        = Empty
 update x y sh 

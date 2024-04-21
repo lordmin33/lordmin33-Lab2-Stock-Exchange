@@ -1,6 +1,6 @@
 module Lab2 where
 
-import Data.List hiding (insert, delete)
+import Data.List hiding (insert, delete, find)
 import Control.Applicative
 import System.Environment
 import System.IO
