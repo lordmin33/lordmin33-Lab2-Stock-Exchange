@@ -114,11 +114,11 @@ main = do
 trade :: [Bid] -> IO()
 trade bids = do
   let initialState = OrderBook { buyBid = Empty, sellBid = Empty }
-  orderBook initialState' bids
+  orderBook initialState bids
   where 
     initialState' = OrderBook { buyBid = Empty, sellBid = Empty }
 
--- Maybe put everything in the book and then check if there exist a buyer for the seller?
+-- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
 orderBook :: OrderBook -> [Bid] -> IO()
 --orderBook book [] = book
 orderBook book bids = do
