@@ -163,4 +163,4 @@ printBids :: SkewHeap Bid -> IO ()
 printBids sh =  putStrLn(listToString (toSortedList sh))
 
 listToString :: Show a => [a] -> String
-listToString xs = concat $ intersperse ", " (map show xs) -- ", "going to appear on the last bidtype
+listToString xs = concat $ intersperse ", " (map show xs) 
