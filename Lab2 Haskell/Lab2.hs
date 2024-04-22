@@ -13,7 +13,6 @@ data Bid
   | Sell Person Price          -- Person offers to sell share
   | NewBuy Person Price Price  -- Person changes buy bid
   | NewSell Person Price Price -- Person changes sell bid
-  deriving (Eq)
 
 type Person = String
 type Price = Integer
@@ -26,10 +25,14 @@ data OrderBook = OrderBook {
   sellBid :: SellBid 
   }
 
+instance Eq Bid where
+    (Buy s1 i1) == (Buy s2 i2) = s1 == s2 && i1 == i2
+    (Sell s1 i1) == (Sell s2 i2) = s1 == s2 && i1 == i2
+    _ == _ = False
+
 instance Show Bid where
   show (Buy person price)       = person ++ " " ++ show price
   show (Sell person price)      = person ++ " " ++ show price
- 
 
 instance Ord Bid where
   compare (Buy _ price1) (Buy _ price2) = compare price1 price2
@@ -138,9 +141,13 @@ processBids book (bid:rest) = case bid of
 
 processBuys :: OrderBook -> Bid -> OrderBook
 processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
-  --if price ==  (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
+  --if buyprice >= (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
+  -- 
   --        "Buyer ++ " buys from " ++ seller ++  " for " price" -- maybe print it out here?? 
+  --        proccessBuys book ( Buy person (buyprice-askprice))
+  --
   -- else
+  -- 
   book {buyBid = insert (Buy person price) (buyBid book)}
 
 
@@ -164,3 +171,6 @@ printBids sh =  putStrLn(listToString (toSortedList sh))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
+
+listToString' :: Show a => [a] -> String
+listToString' xs = concat $ map (\x ->  (show x) ++ ", ") ( xs) 
