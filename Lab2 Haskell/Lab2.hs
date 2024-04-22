@@ -25,6 +25,9 @@ data OrderBook = OrderBook {
   sellBid :: SellBid 
   }
 
+--instance Show Price where
+--  show (Price p) = show p
+
 instance Eq Bid where
     (Buy s1 i1) == (Buy s2 i2) = s1 == s2 && i1 == i2
     (Sell s1 i1) == (Sell s2 i2) = s1 == s2 && i1 == i2
@@ -139,37 +142,45 @@ processBids book (bid:rest) = case bid of
     NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
     NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
 
-processBuys :: OrderBook -> Bid -> OrderBook -- need case for 0 as price
+processBuys :: OrderBook -> Bid -> OrderBook 
 processBuys book (Buy _ 0) = book
-processBuys book@(OrderBook buy sell) bid@(Buy person price) 
-  = case (compare' bid sell) of
-    Nothing -> book {buyBid = insert (Buy person price) (buyBid book)}
-    Just x@(Sell seller askprice)  -> (processBuys book ( Buy person (price-askprice))) --(delete x (sellBid book))
-      --putStrLn( (show Buyer) ++ " buys from " ++ (show seller) ++  " for " ++ buyprice)
-
-
-     -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
-  -- 
-  --        putStrLn"Buyer ++ " buys from " ++ seller ++  " for " ++ buyprice -- maybe print it out here?? 
-  --        proccessBuys book ( Buy person (buyprice-askprice))
-  --
-  -- else
-  -- 
-  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (NewBuy "a" 2 8)]
-
+processBuys book@(OrderBook buy sell) bid@(Buy person price) = --book {buyBid = insert (Buy person price) (buyBid book)}
+  case (compare' bid sell) of
+    Nothing                        -> book {buyBid = insert (Buy person price) (buyBid book)}
+    Just x@(Sell seller askprice)  -> 
+      --putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
+      updatedBook { sellBid = delete (Sell seller askprice) (sellBid updatedBook) }
+      where
+        updatedPrice = price - askprice
+        updatedBook = processBuys book (Buy person updatedPrice)
+                                                                -- it also has som more errors, not adding correct to orderBook
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6)]
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (Buy "a" 2)]
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6)]
+  --trade [(Sell "a" 2),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Buy "gh" 6)]
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(NewBuy "b" 6 7),(Buy "c" 6),(Buy "y" 17),(Buy "d" 6),(Buy "c" 6),(Buy "k" 2),(Buy "d8" 6),(Buy "c" 6),(Buy "k" 2),(Buy "o" 6),(Buy "k2" 6),(Buy "k1" 2),(Buy "ä" 88),(Buy "åå" 76),(Buy "å" 2), (Buy "b" 7), (Buy "B" 7), (Buy "b" 7), (Buy "a" 2)]
+  --trade [(Buy "a" 2),(Buy "b" 6),(Buy "c" 4),(Sell "d" 6),(Buy "e" 6),(Sell "f" 17),(Sell "g" 6),(Buy "h" 6),(Sell "i" 2),(Sell "j" 6)]
+  --trade [(Sell "a" 2),(Sell "b" 6),(Sell "c" 4),(Sell "d" 6),(Sell "e" 6),(Sell "f" 17),(Sell "g" 6),(Sell "h" 6),(Sell "i" 2),(Sell "j" 6), (Buy "k" 177)]
 
 processSells :: OrderBook -> Bid -> OrderBook
-processSells book@(OrderBook buy sell) bid@(Sell person price) = 
-  book {sellBid = insert (Sell person price) (sellBid book)}
-  
+processSells book (Sell _ 0) = book
+processSells book@(OrderBook buy sell) bid@(Sell person price) = book {sellBid = insert (Sell person price) (sellBid book)}
+  {-case (compare' bid buy) of 
+    Nothing                     -> book {sellBid = insert (Sell person price) (sellBid book)}
+    Just x@(Buy buyer buyPrice) -> 
+      updatedBook { sellBid = delete (Sell person price) (sellBid updatedBook) }
+      where
+        updatedPrice = buyPrice - price
+        updatedBook = processBuys book (Buy buyer updatedPrice)-- probably why it gives stackoverflow
+        -}
 processNewBuy :: OrderBook -> Bid -> OrderBook
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
- let (a, updatedBuyBid) = delete (Buy person oldPrice) (buyBid book)
+ let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
 
 processNewSell :: OrderBook -> Bid -> OrderBook
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
-  let (a ,updatedSellBid) = delete (Sell person oldPrice) (sellBid book)
+  let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
 
 compare' :: Bid -> SkewHeap Bid -> Maybe Bid
@@ -180,7 +191,7 @@ compare' (Sell seller sellPrice) (Node x@(Buy buyer buyPrice) l r)
                     Just match -> Just match
                     Nothing -> compare' (Sell seller sellPrice) r  -- If not found in the left subtree, recursively search in the right subtree
 compare' (Buy buyer buyPrice2)  h@(Node x@(Sell seller2 sellPrice2) l r) 
-  | buyPrice2 <= sellPrice2 = Just x  
+  | sellPrice2 <= buyPrice2 = Just x  
   | otherwise = case (compare' (Buy buyer buyPrice2) l) of
                     Just match -> Just match
                     Nothing -> compare' (Buy buyer buyPrice2) r 
@@ -190,6 +201,3 @@ printBids sh =  putStrLn(listToString (toSortedList sh))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
-
-listToString' :: Show a => [a] -> String
-listToString' xs = concat $ map (\x ->  (show x) ++ ", ") ( xs) 

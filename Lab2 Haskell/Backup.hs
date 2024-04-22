@@ -1,84 +1,203 @@
-import Data.List
-import Control.Monad
-import PriorityQueue
+module Lab2 where
 
--- Define types for BuyBid and SellBid
-type BuyBid = SkewHeap Bid
+import Data.List hiding (insert, delete, find)
+import Control.Applicative
+import System.Environment
+import System.IO
+import PriorityQueue
+--import TheOrderBook
+
+-- | Bids.
+data Bid
+  = Buy Person Price           -- Person offers to buy share
+  | Sell Person Price          -- Person offers to sell share
+  | NewBuy Person Price Price  -- Person changes buy bid
+  | NewSell Person Price Price -- Person changes sell bid
+
+type Person = String
+type Price = Integer
+
+type BuyBid  = SkewHeap Bid
 type SellBid = SkewHeap Bid
 
--- Implement Ord instances for BuyBid and SellBid
-instance Ord BuyBid where
+data OrderBook = OrderBook { 
+  buyBid  :: BuyBid,
+  sellBid :: SellBid 
+  }
+
+--instance Show Price where
+--  show (Price p) = show p
+
+instance Eq Bid where
+    (Buy s1 i1) == (Buy s2 i2) = s1 == s2 && i1 == i2
+    (Sell s1 i1) == (Sell s2 i2) = s1 == s2 && i1 == i2
+    _ == _ = False
+
+instance Show Bid where
+  show (Buy person price)       = person ++ " " ++ show price
+  show (Sell person price)      = person ++ " " ++ show price
+
+instance Ord Bid where
+  compare (Buy _ price1) (Buy _ price2) = compare price1 price2
+  compare (Buy _ _) (Sell _ _) = LT
+  compare (Buy _ _) (NewBuy _ _ _) = LT
+  compare (Buy _ _) (NewSell _ _ _) = LT
+  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
+  compare (Sell _ _) (NewBuy _ _ _) = LT
+  compare (Sell _ _) (NewSell _ _ _) = LT
+  compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
+  compare (NewBuy _ _ _) (Buy _ _) = GT
+  compare (NewBuy _ _ _) (Sell _ _) = GT
+  compare (NewSell _ _ _) (Buy _ _) = GT
+  compare (NewSell _ _ _) (Sell _ _) = GT
+
+x = (Node (Buy "a" 2) (Node (Buy "b" 5) Empty Empty) (Node (Buy "c" 2) Empty Empty))
+
+{-instance Ord BuyBid where
   compare Empty Empty = EQ
   compare Empty _ = LT
   compare _ Empty = GT
-  compare (Node (Buy _ price1) _ _) (Node (Buy _ price2) _ _) = compare price2 price1
+  compare (Node (Buy _ price1) _ _) (Node (Buy _ price2) _ _) = compare price1 price2
+
 
 instance Ord SellBid where
   compare Empty Empty = EQ
   compare Empty _ = LT
   compare _ Empty = GT
   compare (Node (Sell _ price1) _ _) (Node (Sell _ price2) _ _) = compare price1 price2
+-}  
 
--- Define the OrderBook structure
-data OrderBook = OrderBook
-  { buyBid :: BuyBid,
-    sellBid :: SellBid
-  }
 
--- Implement the trade function
-trade :: OrderBook -> [Bid] -> IO ()
-trade _ [] = return ()
-trade book (bid : rest) = do
-  let (updatedBook, transaction) = processBid book bid
-  when (isJust transaction) $ putStrLn (fromJust transaction)
-  trade updatedBook rest
 
--- Define the processBid function to handle individual bids
-processBid :: OrderBook -> Bid -> (OrderBook, Maybe String)
-processBid book bid =
-  case bid of
-    Buy person price -> processBuy book person price
-    Sell person price -> processSell book person pric
-    NewBuy person oldPrice newPrice -> processNewBuy book person oldPrice newPrice
-    NewSell person oldPrice newPrice -> processNewSell book person oldPrice newPrice
+-- | Parses a bid. Incorrectly formatted bids are returned verbatim
+-- (tagged with 'Left').
 
--- Define functions to process individual bid types
-processBuy :: OrderBook -> Person -> Price -> (OrderBook, Maybe String)
-processBuy book@(OrderBook buy sell) person price =
-  case minView sell of
-    Nothing -> (book {buyBid = insert (Buy person price) (buyBid book)}, Nothing)
-    Just (Sell seller askPrice, remainingSell) ->
-      if askPrice <= price
-        then (book {sellBid = remainingSell}, Just $ person ++ " buys a share from " ++ seller ++ " for " ++ show price ++ "kr")
-        else (book {buyBid = insert (Buy person price) (buyBid book)}, Nothing)
+parseBid :: String -> Either String Bid
+parseBid s = case words s of
+  name : kind : prices ->
+    case (kind, mapM readInteger prices) of
+      ("K",  Just [price])              -> Right (Buy name price)
+      ("S",  Just [price])              -> Right (Sell name price)
+      ("NK", Just [oldPrice, newPrice]) -> Right (NewBuy name oldPrice newPrice)
+      ("NS", Just [oldPrice, newPrice]) -> Right (NewSell name oldPrice newPrice)
+      _ -> Left s
+  _ -> Left s
+  where
+  readInteger :: String -> Maybe Integer
+  readInteger s = case filter (null . snd) $ reads s of
+    [(x, _)] -> Just x
+    _        -> Nothing
 
-processSell :: OrderBook -> Person -> Price -> (OrderBook, Maybe String)
-processSell book@(OrderBook buy sell) person price =
-  case minView buy of
-    Nothing -> (book {sellBid = insert (Sell person price) (sellBid book)}, Nothing)
-    Just (Buy buyer bidPrice, remainingBuy) ->
-      if bidPrice >= price
-        then (book {buyBid = remainingBuy}, Just $ buyer ++ " buys a share from " ++ person ++ " for " ++ show bidPrice ++ "kr")
-        else (book {sellBid = insert (Sell person price) (sellBid book)}, Nothing)
+-- | Parses a sequence of bids. Correctly formatted bids are returned
+-- (in the order encountered), and an error message is printed for
+-- each incorrectly formatted bid.
 
-processNewBuy :: OrderBook -> Person -> Price -> Price -> (OrderBook, Maybe String)
-processNewBuy book@(OrderBook buy sell) person oldPrice newPrice =
-  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
-   in (book {buyBid = insert (NewBuy person oldPrice newPrice) updatedBuyBid}, Nothing)
+parseBids :: String -> IO [Bid]
+parseBids s = concat <$> mapM (check . parseBid) (lines s)
+  where
+  check (Left bid)  = do
+    hPutStrLn stderr $ "Malformed bid: " ++ bid
+    return []
+  check (Right bid) = return [bid]
 
-processNewSell :: OrderBook -> Person -> Price -> Price -> (OrderBook, Maybe String)
-processNewSell book@(OrderBook buy sell) person oldPrice newPrice =
-  let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
-   in (book {sellBid = insert (NewSell person oldPrice newPrice) updatedSellBid}, Nothing)
+-- | The main function of the program.
 
--- Main function to handle input and output
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [] -> putStrLn "Usage: ./Lab2 <filename>"
-    (filename:_) -> do
-      contents <- readFile filename
-      let bids = parseBids contents
-          initialState = OrderBook {buyBid = Empty, sellBid = Empty}
-      trade initialState bids
+    []  -> process stdin
+    [f] -> process =<< openFile f ReadMode
+    _   -> hPutStr stderr $ unlines
+      [ "Usage: ./Lab2 [<file>]"
+      , "If no file is given, then input is read from standard input."
+      ]
+  where
+  process h = trade =<< parseBids =<< hGetContents h
+
+-- | The core of the program. Takes a list of bids and executes them.
+
+trade :: [Bid] -> IO()
+trade bids = do
+  let initialState = OrderBook { buyBid = Empty, sellBid = Empty }
+  orderBook initialState bids
+  where 
+    initialState' = OrderBook { buyBid = Empty, sellBid = Empty }
+
+-- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
+orderBook :: OrderBook -> [Bid] -> IO()
+--orderBook book [] = book
+orderBook book bids = do
+  let finalOrderBook = processBids book bids
+  
+  putStrLn "Order book:"
+  putStr "Sellers: " >> printBids (sellBid finalOrderBook)
+  putStr "Buyers: " >> printBids (buyBid finalOrderBook)
+
+processBids :: OrderBook -> [Bid] -> OrderBook 
+processBids book [] = book 
+processBids book (bid:rest) = case bid of 
+    Buy person price                  -> processBids (processBuys book bid ) rest
+    Sell person price                 -> processBids (processSells book bid) rest 
+    NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
+    NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
+
+processBuys :: OrderBook -> Bid -> OrderBook 
+processBuys book (Buy _ 0) = book
+processBuys book@(OrderBook buy sell) bid@(Buy person price) = --book {buyBid = insert (Buy person price) (buyBid book)}
+  case (compare' bid sell) of
+    Nothing                        -> book {buyBid = insert (Buy person price) (buyBid book)}
+    Just x@(Sell seller askprice)  -> 
+      putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
+      updatedBook { sellBid = delete (Sell seller askprice) (sellBid updatedBook) }
+      where
+        updatedPrice = price - askprice
+        updatedBook = processBuys book (Buy person updatedPrice)-- gives stack overflow for some reason, no clue as to why??????
+      
+  --        putStrLn"Buyer ++ " buys from " ++ seller ++  " for " ++ buyprice -- maybe print it out here?? 
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (NewBuy "a" 2 8)]
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6)]
+
+processSells :: OrderBook -> Bid -> OrderBook
+processSells book (Sell _ 0) = book
+processSells book@(OrderBook buy sell) bid@(Sell person price) = book {sellBid = insert (Sell person price) (sellBid book)}
+  {-case (compare' bid buy) of 
+    Nothing                     -> book {sellBid = insert (Sell person price) (sellBid book)}
+    Just x@(Buy buyer buyPrice) -> 
+      updatedBook { sellBid = delete (Sell person price) (sellBid updatedBook) }
+      where
+        updatedPrice = buyPrice - price
+        updatedBook = processBuys book (Buy buyer updatedPrice)-- probably why it gives stackoverflow
+        -}
+  
+processNewBuy :: OrderBook -> Bid -> OrderBook
+processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
+ let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
+   in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
+
+processNewSell :: OrderBook -> Bid -> OrderBook
+processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
+  let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
+   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
+
+compare' :: Bid -> SkewHeap Bid -> Maybe Bid
+compare' _ Empty = Nothing  -- If the heap is empty, return Nothing
+compare' (Sell seller sellPrice) (Node x@(Buy buyer buyPrice) l r)
+  | sellPrice <= buyPrice = Just x  -- If the sell price is less than or equal to the buy price, return the buy bid
+  | otherwise = case (compare' (Sell seller sellPrice) l) of  -- Otherwise, recursively search in the left subtree
+                    Just match -> Just match
+                    Nothing -> compare' (Sell seller sellPrice) r  -- If not found in the left subtree, recursively search in the right subtree
+compare' (Buy buyer buyPrice2)  h@(Node x@(Sell seller2 sellPrice2) l r) 
+  | buyPrice2 <= sellPrice2 = Just x  
+  | otherwise = case (compare' (Buy buyer buyPrice2) l) of
+                    Just match -> Just match
+                    Nothing -> compare' (Buy buyer buyPrice2) r 
+
+printBids :: SkewHeap Bid -> IO ()
+printBids sh =  putStrLn(listToString (toSortedList sh))
+
+listToString :: Show a => [a] -> String
+listToString xs = concat $ intersperse ", " (map show xs) 
+
+listToString' :: Show a => [a] -> String
+listToString' xs = concat $ map (\x ->  (show x) ++ ", ") ( xs) 
