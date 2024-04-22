@@ -141,6 +141,7 @@ processBids book (bid:rest) = case bid of
 
 processBuys :: OrderBook -> Bid -> OrderBook
 processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
+  -- (sellBid book)
   --if buyprice >= (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
   -- 
   --        "Buyer ++ " buys from " ++ seller ++  " for " price" -- maybe print it out here?? 
@@ -157,12 +158,12 @@ processSells book@(OrderBook buy sell) bid@(Sell person price) =
   
 processNewBuy :: OrderBook -> Bid -> OrderBook
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
- let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
+ let (a, updatedBuyBid) = delete (Buy person oldPrice) (buyBid book)
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
 
 processNewSell :: OrderBook -> Bid -> OrderBook
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
-  let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
+  let (a ,updatedSellBid) = delete (Sell person oldPrice) (sellBid book)
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
 
 

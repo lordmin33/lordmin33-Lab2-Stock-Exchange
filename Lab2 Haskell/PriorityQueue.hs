@@ -36,12 +36,13 @@ extractMin Empty        = Nothing
 extractMin (Node x l r) = Just (x, merge l r)
 
 -- deletes the first instance of a specific value in the heap
-delete :: Ord a => a -> SkewHeap a -> SkewHeap a 
-delete _ Empty = Empty
-delete y h@(Node x l r) 
-    | y == x          = (merge l r)
-    | y > x           = Node x (delete y l) (delete y r)
-    |otherwise        = h
+delete :: Ord a => a -> SkewHeap a -> (Maybe a, SkewHeap a)
+delete _ Empty = (Nothing, Empty) -- If the heap is empty, return Nothing
+delete y (Node x l r)
+    | y == x    = (Just x, merge l r) -- If the root value equals the value to delete, return Just x and merge the left and right subtrees
+    | y < x     = let (deleted, newL) = delete y l in (deleted, Node x newL r) -- If the value to delete is less than the root value, recursively delete from the left subtree
+    | otherwise = let (deleted, newR) = delete y r in (deleted, Node x l newR) -- If the value to delete is greater than the root value, recursively delete from the right subtree
+
 
 toSortedList :: Ord a => SkewHeap a -> [a]
 toSortedList Empty          = []
@@ -59,8 +60,8 @@ find x (Node y l r)
     | otherwise = False
 
 
-update :: Ord a => a -> a -> SkewHeap a -> SkewHeap a
+{- update :: Ord a => a -> a -> SkewHeap a -> SkewHeap a
 update _ _ Empty        = Empty
 update x y sh 
     | delete x sh == sh = sh 
-    | otherwise         = insert y (delete x sh)  
+    | otherwise         = insert y (delete x sh)  -}
