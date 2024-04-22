@@ -139,17 +139,23 @@ processBids book (bid:rest) = case bid of
     NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
     NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
 
-processBuys :: OrderBook -> Bid -> OrderBook
-processBuys book@(OrderBook buy sell) bid@(Buy person price) = 
-  -- (sellBid book)
-  --if buyprice >= (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
+processBuys :: OrderBook -> Bid -> OrderBook -- need case for 0 as price
+processBuys book (Buy _ 0) = book
+processBuys book@(OrderBook buy sell) bid@(Buy person price) 
+  = case (compare' bid sell) of
+    Nothing -> book {buyBid = insert (Buy person price) (buyBid book)}
+    Just x@(Sell seller askprice)  -> (processBuys book ( Buy person (price-askprice))) --(delete x (sellBid book))
+      --putStrLn( (show Buyer) ++ " buys from " ++ (show seller) ++  " for " ++ buyprice)
+
+
+     -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
   -- 
   --        putStrLn"Buyer ++ " buys from " ++ seller ++  " for " ++ buyprice -- maybe print it out here?? 
   --        proccessBuys book ( Buy person (buyprice-askprice))
   --
   -- else
   -- 
-  book {buyBid = insert (Buy person price) (buyBid book)}
+  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (NewBuy "a" 2 8)]
 
 
 processSells :: OrderBook -> Bid -> OrderBook
@@ -166,6 +172,18 @@ processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) 
   let (a ,updatedSellBid) = delete (Sell person oldPrice) (sellBid book)
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
 
+compare' :: Bid -> SkewHeap Bid -> Maybe Bid
+compare' _ Empty = Nothing  -- If the heap is empty, return Nothing
+compare' (Sell seller sellPrice) (Node x@(Buy buyer buyPrice) l r)
+  | sellPrice <= buyPrice = Just x  -- If the sell price is less than or equal to the buy price, return the buy bid
+  | otherwise = case (compare' (Sell seller sellPrice) l) of  -- Otherwise, recursively search in the left subtree
+                    Just match -> Just match
+                    Nothing -> compare' (Sell seller sellPrice) r  -- If not found in the left subtree, recursively search in the right subtree
+compare' (Buy buyer buyPrice2)  h@(Node x@(Sell seller2 sellPrice2) l r) 
+  | buyPrice2 <= sellPrice2 = Just x  
+  | otherwise = case (compare' (Buy buyer buyPrice2) l) of
+                    Just match -> Just match
+                    Nothing -> compare' (Buy buyer buyPrice2) r 
 
 printBids :: SkewHeap Bid -> IO ()
 printBids sh =  putStrLn(listToString (toSortedList sh))
