@@ -144,7 +144,7 @@ processBuys book@(OrderBook buy sell) bid@(Buy person price) =
   -- (sellBid book)
   --if buyprice >= (askprice) -- How to make it happen????? Need to check sellBid(a skeawHeap) but how????
   -- 
-  --        "Buyer ++ " buys from " ++ seller ++  " for " price" -- maybe print it out here?? 
+  --        putStrLn"Buyer ++ " buys from " ++ seller ++  " for " ++ buyprice -- maybe print it out here?? 
   --        proccessBuys book ( Buy person (buyprice-askprice))
   --
   -- else
