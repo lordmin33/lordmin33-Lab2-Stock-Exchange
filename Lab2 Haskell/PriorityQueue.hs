@@ -26,9 +26,10 @@ merge h1@(Node x1 l1 r1) h2@(Node x2 l2 r2)
 insert :: Ord a => a -> SkewHeap a -> SkewHeap a 
 insert x sh = merge (singleton x) sh 
 
-extractMin' :: Ord a => SkewHeap a -> SkewHeap a 
-extractMin' Empty = Empty
-extractMin' h@(Node x l r ) = merge l r
+--More or less just deletes the root node which the min value
+deleteMin :: Ord a => SkewHeap a -> SkewHeap a 
+deleteMin Empty = Empty
+deleteMin h@(Node x l r ) = merge l r
 
 -- Extract the minimum value of the heap and merge the rest  
 extractMin :: Ord a => SkewHeap a -> Maybe (a, SkewHeap a)
