@@ -148,28 +148,31 @@ processBuys book@(OrderBook buy sell) bid@(Buy person price) = --book {buyBid = 
   case (compare' bid sell) of
     Nothing                        -> book {buyBid = insert (Buy person price) (buyBid book)}
     Just x@(Sell seller askprice)  -> 
-      putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
-      updatedBook { sellBid = delete (Sell seller askprice) (sellBid updatedBook) }
+      --putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
+      book { sellBid = delete (Sell seller askprice) (sellBid book) }
       where
         updatedPrice = price - askprice
-        updatedBook = processBuys book (Buy person updatedPrice)-- gives stack overflow for some reason, no clue as to why??????
-      
-  --        putStrLn"Buyer ++ " buys from " ++ seller ++  " for " ++ buyprice -- maybe print it out here?? 
-  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (NewBuy "a" 2 8)]
-  --trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6)]
+        updatedBook = processBuys book (Buy person updatedPrice)-- not adding correct to orderBook
 
+t1 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6)]
+t2 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (Buy "a" 2)]
+t3 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6)]
+t4 = trade [(Sell "a" 2),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Buy "gh" 6)]
+t5 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(NewBuy "j" 6 7),(Buy "c" 6),(Buy "y" 17),(Buy "d" 6),(Buy "c" 6),(Buy "k" 2),(Buy "d8" 6),(Buy "c" 6),(Buy "k" 2),(Buy "o" 6),(Buy "k2" 6),(Buy "k1" 2),(Buy "ä" 88),(Buy "åå" 76),(Buy "å" 2), (Buy "b" 7), (Buy "B" 7), (Buy "b" 7), (Buy "a" 2)]
+t6 = trade [(Buy "a" 2),(Buy "b" 6),(Buy "c" 4),(Sell "d" 6),(Buy "e" 6),(Sell "f" 17),(Sell "g" 6),(Buy "h" 6),(Sell "i" 2),(Sell "j" 6)]
+t7 = trade [(Sell "a" 2),(Sell "b" 6),(Sell "c" 4),(Sell "d" 6),(Sell "e" 6),(Sell "f" 17),(Sell "g" 6),(Sell "h" 6),(Sell "i" 2),(Sell "j" 6), (Buy "k" 177)]
+t8 = trade [(Sell "a" 1),(Sell "b" 1),(Sell "c" 1),(Sell "d" 1),(Sell "e" 1),(Sell "f" 1),(Sell "g" 1),(Sell "h" 1),(Sell "i" 1),(Sell "j" 1), (Buy "k" 1)] --10 sell, 1 buy
 processSells :: OrderBook -> Bid -> OrderBook
 processSells book (Sell _ 0) = book
-processSells book@(OrderBook buy sell) bid@(Sell person price) = book {sellBid = insert (Sell person price) (sellBid book)}
-  {-case (compare' bid buy) of 
+processSells book@(OrderBook buy sell) bid@(Sell person price) = --book {sellBid = insert (Sell person price) (sellBid book)}
+  case (compare' bid buy) of 
     Nothing                     -> book {sellBid = insert (Sell person price) (sellBid book)}
     Just x@(Buy buyer buyPrice) -> 
-      updatedBook { sellBid = delete (Sell person price) (sellBid updatedBook) }
+      updatedBook { sellBid = delete (Sell person price) (sellBid updatedBook), buyBid = delete x (buyBid updatedBook) }
       where
         updatedPrice = buyPrice - price
-        updatedBook = processBuys book (Buy buyer updatedPrice)-- probably why it gives stackoverflow
-        -}
-  
+        updatedBook = processBuys book (Buy buyer updatedPrice)
+      
 processNewBuy :: OrderBook -> Bid -> OrderBook
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)

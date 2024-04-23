@@ -60,8 +60,8 @@ find x (Node y l r)
     | otherwise = False
 
 
-{- update :: Ord a => a -> a -> SkewHeap a -> SkewHeap a
+update :: Ord a => a -> a -> SkewHeap a -> SkewHeap a
 update _ _ Empty        = Empty
 update x y sh 
     | delete x sh == sh = sh 
-    | otherwise         = insert y (delete x sh)  -}
+    | otherwise         = insert y (delete x sh)
