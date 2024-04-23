@@ -109,53 +109,59 @@ trade bids = do
 orderBook :: OrderBook -> [Bid] -> IO()
 --orderBook book [] = book
 orderBook book bids = do
-  let finalOrderBook = processBids book bids
-  
+  let (finalOrderBook, str)= processBids book bids
+  putStrLn (Just str)
   putStrLn "Order book:"
   putStr "Sellers: " >> printBids (sellBid finalOrderBook)
   putStr "Buyers: " >> printBids (buyBid finalOrderBook)
 
-processBids :: OrderBook -> [Bid] -> OrderBook 
-processBids book [] = book 
+processBids :: OrderBook -> [Bid] -> (OrderBook, Maybe String)  
+processBids book [] = (book, Nothing) 
 processBids book (bid:rest) = case bid of 
-    Buy person price                  -> processBids (processBuys book bid ) rest
-    Sell person price                 -> processBids (processSells book bid) rest 
-    NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
-    NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
+    Buy person price                  -> let (buy, str)= processBuys book bid
+      in processBids (buy) rest
+    Sell person price                 -> let (sell, str)= processSells book bid
+      in processBids (sell) rest 
+    NewBuy person oldPrice newPrice   -> let (newBuy, str)= processNewBuy book bid
+      in processBids (newBuy) rest
+    NewSell person oldPrice newPrice  -> let (newSell, str)= processNewSell book bid
+      in processBids (newSell) rest
 
-processBuys :: OrderBook -> Bid -> OrderBook 
-processBuys book (Buy _ 0) = book  -- Skip processing if bid price is 0
+processBuys :: OrderBook -> Bid -> (OrderBook, Maybe String) 
+processBuys book (Buy _ 0) = (book, Nothing)  -- Skip processing if bid price is 0
 processBuys book@(OrderBook buy sell) bid@(Buy person price) =
   case compare' bid sell of
-    Nothing -> if price > 0  -- only add values larger than
-               then book {buyBid = insert (Buy person price) (buyBid book)}
-               else book
+    Nothing -> if price > 0 
+               then (book {buyBid = insert (Buy person price) (buyBid book)}, Nothing)
+               else (book, Nothing)
     Just (Sell seller askPrice) ->
-      if price >= askPrice  -- Trade occurs if buy price is greater than or equal to sell price
+      if price >= askPrice 
       then 
-        --putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
-        processBuys (book { sellBid = delete (Sell seller askPrice) (sellBid book) }) (Buy person (price - askPrice))
-      else book
+        let updatedBook = book { sellBid = delete (Sell seller askPrice) (sellBid book) }
+        in (updatedBook, Just $ show person ++ " buys from " ++ show seller ++ " for " ++ show price)
+      else (book, Nothing)
 
-processSells :: OrderBook -> Bid -> OrderBook
-processSells book (Sell _ 0) = book  -- Skip processing if bid price is 0
+
+processSells :: OrderBook -> Bid -> (OrderBook, Maybe String)
+processSells book (Sell _ 0) = (book, Nothing)  -- Skip processing if bid price is 0
 processSells book@(OrderBook buy sell) bid@(Sell person price) =
   case compare' bid buy of
     Nothing -> if price > 0  -- Only add non-zero bids to the order book
-               then book {sellBid = insert (Sell person price) (sellBid book)}
-               else book
+               then (book {sellBid = insert (Sell person price) (sellBid book)}, Nothing)
+               else (book, Nothing)
     Just (Buy buyer buyPrice) ->
       if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
       then 
-        processSells (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Sell person (buyPrice - price))-- don't think it is corecct
-      else book
+        let updatedBook = book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }
+        in (updatedBook, Just $ show person ++ " sells to " ++ show buyer ++ " for " ++ show price)
+      else (book, Nothing)
 
-processNewBuy :: OrderBook -> Bid -> OrderBook
+processNewBuy :: OrderBook -> Bid -> (OrderBook, Maybe String) 
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
 
-processNewSell :: OrderBook -> Bid -> OrderBook
+processNewSell :: OrderBook -> Bid -> (OrderBook, Maybe String) 
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
   let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
@@ -178,6 +184,7 @@ printBids sh =  putStrLn(listToString (toSortedList sh))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
+
 
 t1 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6), (Buy "oo" 18), (Buy "gg" 0)] -- nah it dosn't make sense, i = 0,2 försvinner av någon anledning
 t2 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (Buy "a" 2)]
