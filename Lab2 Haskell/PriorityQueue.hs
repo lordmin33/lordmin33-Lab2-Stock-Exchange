@@ -10,7 +10,7 @@ c = Node 3 (Node 6 (Node 12 Empty Empty) (Node 8 Empty Empty)) (Node 4 (Node 16 
 d = Node 6 (Node 8 Empty Empty) Empty
 
 -- used when inserting a new element to the heap
-singleton :: Ord a => a -> SkewHeap a
+singleton :: Ord a => a -> SkewHeap a -- O(1)
 singleton x = Node x Empty Empty
 
 -- merges two skew heaps into one

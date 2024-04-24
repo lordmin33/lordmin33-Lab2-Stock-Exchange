@@ -109,58 +109,70 @@ trade bids = do
 orderBook :: OrderBook -> [Bid] -> IO()
 -- orderBook book [] = book
 orderBook book bids = do
-  let finalOrderBook = processBids book bids
+  let initialList = [] 
+  let (finalOrderBook, xs) = processBids book bids initialList
   
+  -- Print out the list of strings
+  mapM_ putStrLn xs
+
   putStrLn "Order book:"
   putStr "Sellers: " >> printBids (sellBid finalOrderBook)
-  putStr "Buyers: " >> printBids (buyBid finalOrderBook)
+  putStr "Buyers: " >> revPrintBids (buyBid finalOrderBook)
 
-processBids :: OrderBook -> [Bid] -> OrderBook --O(n), goes until the list is empty
-processBids book [] = book 
-processBids book (bid:rest) = case bid of 
-    Buy person price                  -> processBids (processBuys book bid ) rest
-    Sell person price                 -> processBids (processSells book bid) rest 
-    NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
-    NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
+processBids :: OrderBook -> [Bid] ->  [String] -> (OrderBook, [String]) --O(n), goes until the list is empty
+processBids book [] xs = (book, xs) 
+processBids book (bid:rest) xs = case bid of 
+    Buy person price                  -> let (oBook, ys) = (processBuys book bid xs)
+      in processBids oBook rest ys
+    Sell person price                 -> let (oBook, ys) = (processSells book bid xs)
+      in processBids oBook rest ys
+    NewBuy person oldPrice newPrice   -> let (oBook, ys) = (processNewBuy book bid xs)
+      in processBids oBook rest ys
+    NewSell person oldPrice newPrice  -> let (oBook, ys) = (processNewSell book bid xs)
+      in processBids oBook rest ys
 
-processBuys :: OrderBook -> Bid -> OrderBook 
-processBuys book (Buy _ 0) = book  -- Skip processing if bid price is 0
-processBuys book@(OrderBook buy sell) bid@(Buy person price) =
+processBuys :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
+processBuys book (Buy _ 0) xs = (book, xs)  -- Skip processing if bid price is 0
+processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
   case compare' bid sell of
     Nothing -> if price > 0  -- only add values larger than
-               then book {buyBid = insert (Buy person price) (buyBid book)}
-               else book
+               then 
+                let updatedBook = book {buyBid = insert (Buy person price) (buyBid book)}
+                  in (updatedBook, xs)
+               else (book, xs)
     Just (Sell seller askPrice) ->
       if askPrice <= price  -- Trade occurs if buy price is greater than or equal to sell price
       then 
         --putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
-        processBuys (book { sellBid = delete (Sell seller askPrice) (sellBid book) }) (Buy person 0)
-      else book
+        let updatedBook =  book { sellBid = delete (Sell seller askPrice) (sellBid book) }
+          in  (updatedBook, xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
+      else (book, xs)
 
-processSells :: OrderBook -> Bid -> OrderBook
-processSells book (Sell _ 0) = book  -- Skip processing if bid price is 0
-processSells book@(OrderBook buy sell) bid@(Sell person price) =
+processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
+processSells book (Sell _ 0) xs = (book, xs)  -- Skip processing if bid price is 0
+processSells book@(OrderBook buy sell) bid@(Sell person price) xs =
   case compare' bid buy of
     Nothing -> if price > 0  -- Only add non-zero bids to the order book
-               then book {sellBid = insert (Sell person price) (sellBid book)}
-               else book
+               then let updatedBook = book {sellBid = insert (Sell person price) (sellBid book)}
+                in (updatedBook, xs)
+               else (book, xs)
     Just (Buy buyer buyPrice) ->
       if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
       then 
         --putStrLn $ show buyer ++ " buys from " ++ show person  ++ " for " ++ show price
-        processBuys (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Buy buyer 0)-- don't think it is corect (buyer needs to stay, not the seller)
-        -- book {buyBid = insert (Buy buyer (buyPrice - price))}
-      else book
+        let updatedBook = book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }
+        in  (updatedBook, xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)]) -- book {buyBid = insert (Buy buyer (buyPrice - price))}
+      else (book, xs)
 
-processNewBuy :: OrderBook -> Bid -> OrderBook
-processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
+processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
+processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
-   in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
+   in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice) xs)
 
-processNewSell :: OrderBook -> Bid -> OrderBook
-processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
+processNewSell :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
+processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) xs =
   let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
-   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice)) 
+   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs) 
 
 compare' :: Bid -> SkewHeap Bid -> Maybe Bid
 compare' _ Empty = Nothing  -- If the heap is empty, return Nothing 
@@ -177,6 +189,9 @@ compare' (Buy buyer buyPrice2)  h@(Node x@(Sell seller2 sellPrice2) l r)
 
 printBids :: SkewHeap Bid -> IO ()
 printBids sh =  putStrLn(listToString (toSortedList sh))
+
+revPrintBids :: SkewHeap Bid -> IO ()
+revPrintBids sh =  putStrLn(listToString (reverse(toSortedList sh)))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
