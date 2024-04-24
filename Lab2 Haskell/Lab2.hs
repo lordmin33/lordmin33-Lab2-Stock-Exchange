@@ -148,7 +148,7 @@ processSells book@(OrderBook buy sell) bid@(Sell person price) =
       if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
       then 
         --putStrLn $ show buyer ++ " buys from " ++ person seller ++ " for " ++ show price
-        processSells (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Sell person 0)-- don't think it is corect (buyer needs to stay, not the seller)
+        processBuys (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Buy buyer (buyPrice-price))-- don't think it is corect (buyer needs to stay, not the seller)
         -- book {buyBid = insert (Buy buyer (buyPrice - price))}
       else book
 
@@ -190,4 +190,4 @@ t6 = trade [(Buy "a" 2),(Buy "b" 6),(Buy "c" 4),(Sell "d" 6),(Buy "e" 6),(Sell "
 t7 = trade [(Sell "a" 2),(Sell "b" 6),(Sell "c" 4),(Sell "d" 6),(Sell "e" 6),(Sell "f" 17),(Sell "g" 6),(Sell "h" 6),(Sell "i" 2),(Sell "j" 6), (Buy "k" 177)]
 t8 = trade [(Sell "a" 1),(Sell "b" 1),(Sell "c" 1),(Sell "d" 1),(Sell "e" 1),(Sell "f" 1),(Sell "g" 1),(Sell "h" 1),(Sell "i" 1),(Sell "j" 1), (Buy "k" 1)] --10 sell, 1 buy
 t9 = trade [(Buy "a" 2), (Buy "j" 6), (Buy "g" 4),(Sell "b" 6)]
-t10 = trade [(Buy "a" 2),(Buy "b" 3),(Buy "c" 9),(Sell "d" 5)]
+t10 = trade [(Buy "a" 2),(Buy "b" 3),(Buy "c" 9),(Sell "d" 5),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1)]
