@@ -107,25 +107,34 @@ trade bids = do
 
 -- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
 orderBook :: OrderBook -> [Bid] -> IO()
---orderBook book [] = book
 orderBook book bids = do
-  let (finalOrderBook, str)= processBids book bids
-  putStrLn (Just str)
+  -- Process bids and get the final order book
+  let (finalOrderBook, maybeStr) = processBids book bids
+
+  -- Print the order book
   putStrLn "Order book:"
   putStr "Sellers: " >> printBids (sellBid finalOrderBook)
   putStr "Buyers: " >> printBids (buyBid finalOrderBook)
+
+  -- Print the trade message if there's any
+  case maybeStr of
+    Just str -> putStrLn str
+    Nothing -> return ()  -- No trade message to print
+
+
+
 
 processBids :: OrderBook -> [Bid] -> (OrderBook, Maybe String)  
 processBids book [] = (book, Nothing) 
 processBids book (bid:rest) = case bid of 
     Buy person price                  -> let (buy, str)= processBuys book bid
-      in processBids (buy) rest
+                                            in processBids (buy) rest
     Sell person price                 -> let (sell, str)= processSells book bid
-      in processBids (sell) rest 
+                                            in processBids (sell) rest 
     NewBuy person oldPrice newPrice   -> let (newBuy, str)= processNewBuy book bid
-      in processBids (newBuy) rest
+                                            in processBids (newBuy) rest
     NewSell person oldPrice newPrice  -> let (newSell, str)= processNewSell book bid
-      in processBids (newSell) rest
+                                            in processBids (newSell) rest
 
 processBuys :: OrderBook -> Bid -> (OrderBook, Maybe String) 
 processBuys book (Buy _ 0) = (book, Nothing)  -- Skip processing if bid price is 0
