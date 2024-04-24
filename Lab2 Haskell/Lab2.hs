@@ -115,7 +115,7 @@ orderBook book bids = do
   putStr "Sellers: " >> printBids (sellBid finalOrderBook)
   putStr "Buyers: " >> printBids (buyBid finalOrderBook)
 
-processBids :: OrderBook -> [Bid] -> OrderBook 
+processBids :: OrderBook -> [Bid] -> IO OrderBook 
 processBids book [] = book 
 processBids book (bid:rest) = case bid of 
     Buy person price                  -> processBids (processBuys book bid ) rest
@@ -123,44 +123,46 @@ processBids book (bid:rest) = case bid of
     NewBuy person oldPrice newPrice   -> processBids (processNewBuy book bid) rest
     NewSell person oldPrice newPrice  -> processBids (processNewSell book bid) rest
 
-processBuys :: OrderBook -> Bid -> OrderBook 
-processBuys book (Buy _ 0) = book  -- Skip processing if bid price is 0
-processBuys book@(OrderBook buy sell) bid@(Buy person price) =
+processBuys :: OrderBook -> Bid -> IO OrderBook 
+--processBuys book (Buy _ 0) = book  -- Skip processing if bid price is 0
+processBuys book@(OrderBook buy sell) bid@(Buy person price) = do 
   case compare' bid sell of
     Nothing -> if price > 0  -- only add values larger than
-               then book {buyBid = insert (Buy person price) (buyBid book)}
-               else book
+               then return book {buyBid = insert (Buy person price) (buyBid book)}
+               else return book
     Just (Sell seller askPrice) ->
       if price >= askPrice  -- Trade occurs if buy price is greater than or equal to sell price
       then 
         --putStrLn $ show person ++ " buys from " ++ show seller ++ " for " ++ show price
-        processBuys (book { sellBid = delete (Sell seller askPrice) (sellBid book) }) (Buy person (price - askPrice))
-      else book
+        return processBuys (book { sellBid = delete (Sell seller askPrice) (sellBid book) }) (Buy person 0)
+      else return book
 
-processSells :: OrderBook -> Bid -> OrderBook
-processSells book (Sell _ 0) = book  -- Skip processing if bid price is 0
-processSells book@(OrderBook buy sell) bid@(Sell person price) =
+processSells :: OrderBook -> Bid -> IO OrderBook
+--processSells book (Sell _ 0) = book  -- Skip processing if bid price is 0
+processSells book@(OrderBook buy sell) bid@(Sell person price) = do
   case compare' bid buy of
     Nothing -> if price > 0  -- Only add non-zero bids to the order book
-               then book {sellBid = insert (Sell person price) (sellBid book)}
-               else book
+               then return book {sellBid = insert (Sell person price) (sellBid book)}
+               else return book
     Just (Buy buyer buyPrice) ->
       if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
       then 
-        --putStrLn $ show buyer ++ " buys from " ++ person seller ++ " for " ++ show price
-        processBuys (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Buy buyer (buyPrice-price))-- don't think it is corect (buyer needs to stay, not the seller)
+        putStrLn $ (show buyer) ++ " buys from " ++ (show person)  ++ " for " ++ (show price)
+        return processBuys (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Buy buyer 0)-- don't think it is corect (buyer needs to stay, not the seller)
         -- book {buyBid = insert (Buy buyer (buyPrice - price))}
-      else book
+      else  return book
 
-processNewBuy :: OrderBook -> Bid -> OrderBook
-processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = 
+processNewBuy :: OrderBook -> Bid -> IO OrderBook
+processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) = do
  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice))
 
-processNewSell :: OrderBook -> Bid -> OrderBook
-processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
+processNewSell :: OrderBook -> Bid -> IO OrderBook
+processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) = do
   let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
-   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice)) 
+     in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice)) 
+
+   
 
 compare' :: Bid -> SkewHeap Bid -> Maybe Bid
 compare' _ Empty = Nothing  -- If the heap is empty, return Nothing 
