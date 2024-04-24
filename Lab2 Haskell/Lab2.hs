@@ -107,7 +107,7 @@ trade bids = do
 
 -- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
 orderBook :: OrderBook -> [Bid] -> IO()
---orderBook book [] = book
+-- orderBook book [] = book
 orderBook book bids = do
   let finalOrderBook = processBids book bids
   
@@ -148,7 +148,7 @@ processSells book@(OrderBook buy sell) bid@(Sell person price) =
       if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
       then 
         --putStrLn $ show buyer ++ " buys from " ++ person seller ++ " for " ++ show price
-        processSells (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Sell person (buyPrice - price))-- don't think it is corecct
+        processSells (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Buy person (buyPrice - price))-- don't think it is corecct
       else book
 
 processNewBuy :: OrderBook -> Bid -> OrderBook
