@@ -148,7 +148,7 @@ processSells book@(OrderBook buy sell) bid@(Sell person price) =
       if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
       then 
         --putStrLn $ show buyer ++ " buys from " ++ person seller ++ " for " ++ show price
-        processSells (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Buy person (buyPrice - price))-- don't think it is corecct
+        processSells (book { buyBid = delete (Buy buyer buyPrice) (buyBid book) }) (Sell person (buyPrice - price))-- don't think it is corecct
       else book
 
 processNewBuy :: OrderBook -> Bid -> OrderBook
