@@ -159,10 +159,10 @@ processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) =
 processNewSell :: OrderBook -> Bid -> OrderBook
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) =
   let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
-   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice))
+   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice)) 
 
 compare' :: Bid -> SkewHeap Bid -> Maybe Bid
-compare' _ Empty = Nothing  -- If the heap is empty, return Nothing
+compare' _ Empty = Nothing  -- If the heap is empty, return Nothing 
 compare' (Sell seller sellPrice) (Node x@(Buy buyer buyPrice) l r)
   | sellPrice <= buyPrice = Just x  -- If the sell price is less than or equal to the buy price, return the buy bid
   | otherwise = case (compare' (Sell seller sellPrice) l) of  -- Otherwise, recursively search in the left subtree
