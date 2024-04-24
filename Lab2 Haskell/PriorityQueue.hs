@@ -41,8 +41,7 @@ delete :: Ord a => a -> SkewHeap a -> SkewHeap a
 delete _ Empty = Empty -- If the heap is empty, return Nothing
 delete y (Node x l r)
     | y == x    = merge l r -- If the root value equals the value to delete, return Just x and merge the left and right subtrees
-    | y < x     =  delete y l  -- If the value to delete is less than the root value, recursively delete from the left subtree
-    | otherwise = delete y r  -- If the value to delete is greater than the root value, recursively delete from the right subtree
+    | otherwise = Node x (delete y l) (delete y r)  -- If the value to delete is greater than the root value, recursively delete from the right subtree
 
 
 toSortedList :: Ord a => SkewHeap a -> [a]
