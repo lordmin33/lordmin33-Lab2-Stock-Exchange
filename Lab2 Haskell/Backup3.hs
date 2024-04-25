@@ -18,7 +18,7 @@ type Person = String
 type Price = Integer
 
 type BuyBid  = SkewHeap Bid
-type SellBid = MaxSkewHeap Bid
+type SellBid = MaxHeap Bid
 
 data OrderBook = OrderBook { 
   buyBid  :: BuyBid,
@@ -167,12 +167,14 @@ processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs
  let updatedBuyBid = delete (Buy person oldPrice) (buyBid book)
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice) xs)
 
-processNewSell :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
+processNewSell :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) xs =
   let updatedSellBid = deleteM (Sell person oldPrice) (sellBid book)
-   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs) 
+      updatedBook = OrderBook buy (insertM (Sell person newPrice) updatedSellBid)
+  in (updatedBook, xs)
+ 
 
-compareM :: Bid -> MaxSkewHeap Bid -> Maybe Bid
+compareM :: Bid -> MaxHeap Bid -> Maybe Bid -- Sell Bid
 compareM _ EmptyMax = Nothing  -- If the heap is empty, return Nothing 
 compareM (Buy buyer buyPrice2)  h@(MaxNode x@(Sell seller2 sellPrice2) l r) 
   | sellPrice2 <= buyPrice2 = Just x 
@@ -180,7 +182,7 @@ compareM (Buy buyer buyPrice2)  h@(MaxNode x@(Sell seller2 sellPrice2) l r)
                     Just match -> Just match
                     Nothing -> compareM (Buy buyer buyPrice2) r 
 
-compare' :: Bid -> SkewHeap Bid -> Maybe Bid
+compare' :: Bid -> SkewHeap Bid -> Maybe Bid -- Buy Bid
 compare' _ Empty = Nothing  -- If the heap is empty, return Nothing 
 compare' (Sell seller sellPrice) h@(Node x@(Buy buyer buyPrice) l r)
   | sellPrice <= buyPrice = Just x  -- If the sell price is less than or equal to the buy price, return the buy bid
@@ -194,12 +196,11 @@ largestPrice h@(Node x@(Buy buyer buyPrice) l r) =
     Nothing -> 0
     Just x -> buyPrice
 
-printBids :: MaxSkewHeap Bid -> IO ()
+printBids :: MaxHeap Bid -> IO ()
 printBids sh =  putStrLn(listToString (toSortedListM sh))
 
 revPrintBids :: SkewHeap Bid -> IO ()
 revPrintBids sh =  putStrLn(listToString (reverse(toSortedList sh)))
-
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 

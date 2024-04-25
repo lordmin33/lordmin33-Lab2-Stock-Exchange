@@ -45,33 +45,32 @@ findLargest heap = case extractMin heap of
         _     -> findLargest restHeap -- Otherwise, continue searching in the rest of the heap
 
 
+-------------- have not gotten this to work propperly yet -----------------
+data MaxHeap a = EmptyMax | MaxNode a (MaxHeap a) (MaxHeap a) deriving (Show)
 
-
---------- have not gotten this to work propperly yet
-data MaxSkewHeap a = EmptyMax | MaxNode a (MaxSkewHeap a) (MaxSkewHeap a) deriving (Show)
-
-singletonM :: Ord a => a -> MaxSkewHeap a -- O(1)
+singletonM :: Ord a => a -> MaxHeap a -- O(1)
 singletonM x = MaxNode x EmptyMax EmptyMax
 
--- Merge two max skew heaps
-mergeMax :: Ord a => MaxSkewHeap a -> MaxSkewHeap a -> MaxSkewHeap a --O(n)
+mergeMax :: Ord a => MaxHeap a -> MaxHeap a -> MaxHeap a -- O(log(n))
 mergeMax h1 EmptyMax = h1
 mergeMax EmptyMax h2 = h2
 mergeMax h1@(MaxNode x1 l1 r1) h2@(MaxNode x2 l2 r2)
     | x1 >= x2  = MaxNode x1 (mergeMax r1 h2) l1
     | otherwise = MaxNode x2 (mergeMax r2 h1) l2
 
-insertM :: Ord a => a -> MaxSkewHeap a -> MaxSkewHeap a -- O(log(n))
-insertM x sh = mergeMax (singletonM x) sh 
+insertM :: Ord a => a -> MaxHeap a -> MaxHeap a -- O(log(n))
+insertM x sh = mergeMax (singletonM x) sh
 
--- Convert a skew heap into a max skew heap
-deleteM :: Ord a => a -> MaxSkewHeap a -> MaxSkewHeap a --O(n)
-deleteM _ EmptyMax = EmptyMax -- If the heap is empty, return Nothing
+deleteM :: Ord a => a -> MaxHeap a -> MaxHeap a -- O(log(n))
+deleteM _ EmptyMax = EmptyMax
 deleteM y (MaxNode x l r)
-    | y == x    = mergeMax l r -- If the root value equals the value to delete, return Just x and merge the left and right subtrees
-    | otherwise = MaxNode x (deleteM y l) (deleteM y r)  -- If the value to delete is greater than the root value, recursively delete from the right subtree
+    | y == x    = mergeMax l r
+    | otherwise = MaxNode x (deleteM y l) (deleteM y r)
 
-toSortedListM :: Ord a => MaxSkewHeap a -> [a] -- O(n)
+toSortedListM :: Ord a => MaxHeap a -> [a] -- O(n*log(n))
 toSortedListM EmptyMax          = []
 toSortedListM (MaxNode x l r)   = x : toSortedListM (mergeMax l r)
+
+
+
 
