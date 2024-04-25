@@ -70,7 +70,3 @@ deleteM y (MaxNode x l r)
 toSortedListM :: Ord a => MaxHeap a -> [a] -- O(n*log(n))
 toSortedListM EmptyMax          = []
 toSortedListM (MaxNode x l r)   = x : toSortedListM (mergeMax l r)
-
-
-
-

@@ -185,7 +185,7 @@ compare' (Buy buyer buyPrice2)  h@(Node x@(Sell seller2 sellPrice2) l r)
     where 
       maxprice = undefined -- largestPrice y
 
-largestPrice :: SkewHeap Bid -> Price -- not working properly
+largestPrice :: SkewHeap Bid -> Price 
 largestPrice h@(Node x@(Buy buyer buyPrice) l r) =
   case (findLargest h) of 
     Nothing -> 0
