@@ -132,7 +132,6 @@ processBids book (bid:rest) xs = case bid of
       in processBids oBook rest ys
 
 processBuys :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
---processBuys book (Buy _ 0) xs = (book, xs)  -- Skip processing if bid price is 0
 processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
   case compare' bid sell of
     Nothing -> if price > 0  -- only add values larger than
@@ -148,7 +147,6 @@ processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
       else (book, xs)
 
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
---processSells book (Sell _ 0) xs = (book, xs)  -- Skip processing if bid price is 0
 processSells book@(OrderBook buy sell) bid@(Sell person price) xs =
   case compare' bid buy of
     Nothing -> if price > 0  -- Only add non-zero bids to the order book
@@ -156,7 +154,7 @@ processSells book@(OrderBook buy sell) bid@(Sell person price) xs =
                 in (updatedBook, xs)
                else (book, xs)
     Just (Buy buyer buyPrice) ->
-      if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
+      if price <= buyPrice  -- Trade occurs if buy price is greater than or equal to sell price
       then 
         let updatedBook = book {buyBid = delete (Buy buyer buyPrice) (buyBid book)}
         in  (updatedBook, xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)]) -- book {buyBid = insert (Buy buyer (buyPrice - price))}
@@ -201,14 +199,3 @@ revPrintBids sh =  putStrLn(listToString (reverse(toSortedList sh)))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
-
-t1 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6), (Buy "oo" 18), (Buy "gg" 0)] -- nah it dosn't make sense, i = 0,2 försvinner av någon anledning
-t2 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (Buy "a" 2)]
-t3 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6)]
-t4 = trade [(Sell "a" 2),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Buy "gh" 6)]
-t5 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(NewBuy "j" 6 7),(Buy "c" 6),(Buy "y" 17),(Buy "d" 6),(Buy "c" 6),(Buy "k" 2),(Buy "d8" 6),(Buy "c" 6),(Buy "k" 2),(Buy "o" 6),(Buy "k2" 6),(Buy "k1" 2),(Buy "ä" 88),(Buy "åå" 76),(Buy "å" 2), (Buy "b" 7), (Buy "B" 7), (Buy "b" 7), (Buy "a" 2)]
-t6 = trade [(Buy "a" 2),(Buy "b" 6),(Buy "c" 4),(Sell "d" 6),(Buy "e" 6),(Sell "f" 17),(Sell "g" 6),(Buy "h" 6),(Sell "i" 2),(Sell "j" 6)]
-t7 = trade [(Sell "a" 2),(Sell "b" 6),(Sell "c" 4),(Sell "d" 6),(Sell "e" 6),(Sell "f" 17),(Sell "g" 6),(Sell "h" 6),(Sell "i" 2),(Sell "j" 6), (Buy "k" 177)]
-t8 = trade [(Sell "a" 1),(Sell "b" 1),(Sell "c" 1),(Sell "d" 1),(Sell "e" 1),(Sell "f" 1),(Sell "g" 1),(Sell "h" 1),(Sell "i" 1),(Sell "j" 1), (Buy "k" 1)] --10 sell, 1 buy
-t9 = trade [(Buy "a" 2), (Buy "j" 6), (Buy "g" 4),(Sell "b" 6)]
-t10 = trade [(Buy "a" 2),(Buy "b" 3),(Buy "c" 9),(Sell "d" 5),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1)]
