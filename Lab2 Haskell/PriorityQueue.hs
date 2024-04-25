@@ -47,7 +47,7 @@ findLargest heap = case extractMin heap of
 
 
 
---------- 
+--------- have not gotten this to work propperly yet
 data MaxSkewHeap a = EmptyMax | MaxNode a (MaxSkewHeap a) (MaxSkewHeap a) deriving (Show)
 
 singletonM :: Ord a => a -> MaxSkewHeap a -- O(1)
