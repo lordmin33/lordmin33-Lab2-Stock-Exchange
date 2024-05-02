@@ -193,11 +193,12 @@ compare' (Sell seller sellPrice) h@(MaxNode x@(Buy buyer buyPrice) l r)
                     Nothing -> compare' (Sell seller sellPrice) r  -- If not found in the left subtree, recursively search in the right subtree
 
 
-largestPrice :: SkewHeap Bid -> Price
+{- largestPrice :: SkewHeap Bid -> Price
 largestPrice h@(Node x@(Buy buyer buyPrice) l r) =
   case (findLargest h) of 
     Nothing -> 0
-    Just x -> buyPrice
+    Just x -> buyPrice 
+    -}
 
 printBidsM :: MaxHeap Bid -> IO ()
 printBidsM sh =  putStrLn(listToString (toSortedListM sh))

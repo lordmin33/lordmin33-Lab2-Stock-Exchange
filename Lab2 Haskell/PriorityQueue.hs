@@ -37,13 +37,6 @@ toSortedList :: Ord a => SkewHeap a -> [a] -- O(n)
 toSortedList Empty          = []
 toSortedList (Node x l r)   = x : toSortedList (merge l r) 
 
-findLargest :: Ord a => SkewHeap a -> Maybe a
-findLargest heap = case extractMin heap of
-    Nothing -> Nothing -- If the heap is empty, return Nothing
-    Just (minElem, restHeap) -> case restHeap of
-        Empty -> Just minElem -- If the rest of the heap is empty, minElem is the largest value
-        _     -> findLargest restHeap -- Otherwise, continue searching in the rest of the heap
-
 
 -------------- have not gotten this to work propperly yet -----------------
 data MaxHeap a = EmptyMax | MaxNode a (MaxHeap a) (MaxHeap a) deriving (Show)
