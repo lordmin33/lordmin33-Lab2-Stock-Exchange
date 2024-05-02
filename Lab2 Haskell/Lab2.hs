@@ -218,10 +218,10 @@ t7 = trade [(Sell "a" 2),(Sell "b" 6),(Sell "c" 4),(Sell "d" 6),(Sell "e" 6),(Se
 t8 = trade [(Sell "a" 1),(Sell "b" 1),(Sell "c" 1),(Sell "d" 1),(Sell "e" 1),(Sell "f" 1),(Sell "g" 1),(Sell "h" 1),(Sell "i" 1),(Sell "j" 1), (Buy "k" 1)] --10 sell, 1 buy
 t9 = trade [(Buy "a" 2), (Buy "j" 6), (Buy "g" 4),(Sell "b" 6)]
 t10 = trade [(Buy "a" 2),(Buy "b" 3),(Buy "c" 9),(Sell "d" 5),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1)]
-<<<<<<< HEAD
+-- HEAD
 t11 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (Sell "p5" 65536)]
 t12 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (NewSell "p0" 32768 16384)]
-=======
-t11 = trade [(Sell "p0" 65536),(Buy "p1" 32768),(Buy "p2" 16384),(NewBuy "p1" 32768 24576),(NewSell "p0" 65536 32768),(NewSell "p0" 32768 16384)]
-t12 = trade [(Sell "p0" 10),(Buy "p1" 15),(Sell "p0" 15),(Buy "p1" 10),(Buy "p2" 13),(NewSell "p0" 15 8)]
->>>>>>> 1fa6dfe (test)
+-- =======
+--t11 = trade [(Sell "p0" 65536),(Buy "p1" 32768),(Buy "p2" 16384),(NewBuy "p1" 32768 24576),(NewSell "p0" 65536 32768),(NewSell "p0" 32768 16384)]
+--t12 = trade [(Sell "p0" 10),(Buy "p1" 15),(Sell "p0" 15),(Buy "p1" 10),(Buy "p2" 13),(NewSell "p0" 15 8)]
+-- >>>>>>> 1fa6dfe (test)
