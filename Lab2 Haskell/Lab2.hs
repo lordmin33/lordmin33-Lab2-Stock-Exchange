@@ -17,40 +17,51 @@ data Bid
 type Person = String
 type Price = Integer
 
-type BuyBid  = MaxHeap Bid
-type SellBid = SkewHeap Bid
+type BuyBid = Bid 
+type SellBid = Bid 
+
+type BuyQueue  = SkewHeap BuyBid
+type SellQueue = SkewHeap SellBid
 
 data OrderBook = OrderBook { 
-  buyBid  :: BuyBid,
-  sellBid :: SellBid 
-  }
+  buyQueue  :: BuyQueue, --somehow make the buyQueue into a max Skewheap
+  sellQueue :: SellQueue  -- that way we don't need to use compare' anymore since 
+  }                     -- we will compare min from sellQueue and max from buyQueue by using extracteMin
 
---instance Show Price where
---  show (Price p) = show p
+-- Define Ord instance for Bid
+{- 
+instance Ord Bid where
+  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  -- Reverse order for max heap
+  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
+  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
+-}
+-- Define custom Ord instances for BuyBid and SellBid
+instance Ord BuyBid where
+  compare (Buy _ price1) (Buy _ price2) = compare price1 price2  -- Normal ordering for buy bids
+  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
 
-instance Eq Bid where
-    (Buy s1 i1) == (Buy s2 i2) = s1 == s2 && i1 == i2
-    (Sell s1 i1) == (Sell s2 i2) = s1 == s2 && i1 == i2
-    _ == _ = False
+instance Ord SellBid where
+  compare (Sell _ price1) (Sell _ price2) = compare price2 price1  -- Reverse ordering for sell bids
+  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
+
+
+-- Example function to insert a bid into the order book
+insertBid :: Bid -> OrderBook -> OrderBook
+insertBid bid (OrderBook buy sell) =
+  case bid of
+    Buy _ _ -> OrderBook (insert bid buy) sell
+    Sell _ _ -> OrderBook buy (insert bid sell)
+    _ -> error "Unsupported bid type"
+
 
 instance Show Bid where
   show (Buy person price)       = person ++ " " ++ show price
   show (Sell person price)      = person ++ " " ++ show price
 
-instance Ord Bid where
-  compare (Buy _ price1) (Buy _ price2) = compare price1 price2
-  compare (Buy _ _) (Sell _ _) = LT
-  compare (Buy _ _) (NewBuy _ _ _) = LT
-  compare (Buy _ _) (NewSell _ _ _) = LT
-  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare (Sell _ _) (NewBuy _ _ _) = LT
-  compare (Sell _ _) (NewSell _ _ _) = LT
-  compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
-  compare (NewBuy _ _ _) (Buy _ _) = GT
-  compare (NewBuy _ _ _) (Sell _ _) = GT
-  compare (NewSell _ _ _) (Buy _ _) = GT
-  compare (NewSell _ _ _) (Sell _ _) = GT
-
+instance Eq Bid where
+    (Buy s1 i1) == (Buy s2 i2) = s1 == s2 && i1 == i2
+    (Sell s1 i1) == (Sell s2 i2) = s1 == s2 && i1 == i2
+    _ == _ = False
 
 -- | Parses a bid. Incorrectly formatted bids are returned verbatim
 -- (tagged with 'Left').
@@ -102,7 +113,7 @@ main = do
 
 trade :: [Bid] -> IO()
 trade bids = do
-  let initialState = OrderBook { buyBid = EmptyMax, sellBid = Empty }
+  let initialState = OrderBook {buyQueue = Empty, sellQueue = Empty }
   orderBook initialState bids
 
 -- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
@@ -116,8 +127,8 @@ orderBook book bids = do
   mapM_ putStrLn xs
 
   putStrLn "Order book:"
-  putStr "Sellers: " >> printBids (sellBid finalOrderBook)
-  putStr "Buyers: " >> printBidsM (buyBid finalOrderBook)
+  putStr "Sellers: " >> printBids (sellQueue finalOrderBook)
+  putStr "Buyers: " >> printBids (buyQueue finalOrderBook)
 
 processBids :: OrderBook -> [Bid] ->  [String] -> (OrderBook, [String]) --O(n), goes until the list is empty
 processBids book [] xs = (book, xs) 
@@ -131,98 +142,89 @@ processBids book (bid:rest) xs = case bid of
     NewSell person oldPrice newPrice  -> let (oBook, ys) = (processNewSell book bid xs)
       in processBids oBook rest ys
 
-processBuys :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
---processBuys book (Buy _ 0) xs = (book, xs)  -- Skip processing if bid price is 0
+processBuys :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
+processBuys book bid@(Buy person 0) xs = (book,xs)
 processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
-  case compareM bid sell of
-    Nothing -> if price > 0  -- only add values larger than
+  case extractMin sell of
+    Nothing -> (book, xs)
+    Just s@((Sell seller askPrice), updatedSellQueue) -> 
+      if askPrice <= price
+        then --let updatedBook = book {sellQueue = updatedSellQueue}
+              ((OrderBook buy updatedSellQueue), xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
+      else   --let updatedBook' = book {sellQueue = insert s updatedSellQueue}
+              ((OrderBook buy (insert s updatedSellQueue)), xs ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
+
+{-
+processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
+  case compare' bid sell of
+    Nothing -> if price > 0
                then 
-                let updatedBook = book {buyBid = insertM (Buy person price) (buyBid book)}
+                let updatedBook = book {buyQueue = insert (Buy person price) (buyQueue book)}
                   in (updatedBook, xs)
                else (book, xs)
     Just (Sell seller askPrice) ->
-      if askPrice <= price  -- Trade occurs if buy price is greater than or equal to sell price
+      if askPrice <= price
       then 
-        let updatedBook =  book {sellBid = delete (Sell seller askPrice) (sellBid book)}
-          in  (updatedBook, xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price ++ "kr")])
+        let updatedBook =  book {sellQueue = delete (Sell seller askPrice) (sellQueue book)}
+          in  (updatedBook, xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
       else (book, xs)
+-}
 
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
---processSells book (Sell _ 0) xs = (book, xs)  -- Skip processing if bid price is 0
+processSells book bid@(Sell person 0) xs = (book, xs)
+processSells book@(OrderBook buy sell) bid@(Buy person price) xs =
+  case extractMin buy of
+    Nothing -> (book, xs)
+    Just (b@(Buy buyer askPrice), updatedBuyQueue) -> 
+      if askprice <= price 
+        then --let updatedBook = book {buyQueue = updatedBuyQueue}
+              ((OrderBook updatedBuyQueue sell), xs ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
+      else  --let updatedBook' = book {buyQueue = insert b updatedSellQueue}
+               (OrderBook (insert b updatedSellQueue) sell, xs ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
+
+{-
 processSells book@(OrderBook buy sell) bid@(Sell person price) xs =
   case compare' bid buy of
     Nothing -> if price > 0  -- Only add non-zero bids to the order book
-               then let updatedBook = book {sellBid = insert (Sell person price) (sellBid book)}
+               then let updatedBook = book {sellQueue = insert (Sell person price) (sellQueue book)}
                 in (updatedBook, xs)
                else (book, xs)
     Just (Buy buyer buyPrice) ->
-      if price <= buyPrice  -- Trade occurs if sell price is less than or equal to buy price
+      if price <= buyPrice  -- Trade occurs if buy price is greater than or equal to sell price
       then 
-        let updatedBook = book {buyBid = deleteM (Buy buyer buyPrice) (buyBid book)}
-        in  (updatedBook, xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price ++ "kr")]) -- book {buyBid = insert (Buy buyer (buyPrice - price))}
-      else (book, xs)
+        let updatedBook = book {buyQueue = delete (Buy buyer buyPrice) (buyQueue book)}
+        in  (updatedBook, xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)]) -- book {buyBid = insert (Buy buyer (buyPrice - price))}
+      else (book, xs) -}
 
 processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
- let updatedBuyBid = deleteM (Buy person oldPrice) (buyBid book)
+ let updatedBuyBid = delete (Buy person oldPrice) (buyQueue book)
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice) xs)
 
-processNewSell :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
+processNewSell :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) xs =
-  let updatedSellBid = delete (Sell person oldPrice) (sellBid book)
-    in processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs
-      --updatedBook = OrderBook buy (insert (Sell person newPrice) updatedSellBid)
-  --in (updatedBook, xs)
- 
+  let updatedSellBid = delete (Sell person oldPrice) (sellQueue book)
+   in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs) 
 
-compareM :: Bid -> SkewHeap Bid -> Maybe Bid -- Buy Bid
-compareM _ Empty = Nothing  -- If the heap is empty, return Nothing  
-compareM (Buy buyer buyPrice)  h@(Node x@(Sell seller sellPrice) l r) 
-  | sellPrice <= buyPrice = Just x 
-  | otherwise = case (compareM (Buy buyer buyPrice) l) of
-                    Just match -> Just match
-                    Nothing -> compareM (Buy buyer buyPrice) r 
-
-
-compare' :: Bid -> MaxHeap Bid -> Maybe Bid -- Sell Bid
-compare' _ EmptyMax = Nothing  -- If the heap is empty, return Nothing 
-compare' (Sell seller sellPrice) h@(MaxNode x@(Buy buyer buyPrice) l r)
-  | sellPrice <= buyPrice = Just x  -- If the sell price is less than or equal to the buy price, return the buy bid
+{-
+compare' :: Bid -> SkewHeap Bid -> Maybe Bid
+compare' _ Empty = Nothing  -- If the heap is empty, return Nothing 
+compare' (Sell seller sellPrice) y@(Node x@(Buy buyer buyPrice) l r)
+  | sellPrice <= largestPrice y = Just x  -- If the sell price is less than or equal to the buy price, return the buy bid
   | otherwise = case (compare' (Sell seller sellPrice) l) of  -- Otherwise, recursively search in the left subtree
                     Just match -> Just match
                     Nothing -> compare' (Sell seller sellPrice) r  -- If not found in the left subtree, recursively search in the right subtree
-
-
-{- largestPrice :: SkewHeap Bid -> Price
-largestPrice h@(Node x@(Buy buyer buyPrice) l r) =
-  case (findLargest h) of 
-    Nothing -> 0
-    Just x -> buyPrice 
-    -}
-
-printBidsM :: MaxHeap Bid -> IO ()
-printBidsM sh =  putStrLn(listToString (toSortedListM sh))
+compare' (Buy buyer buyPrice2)  h@(Node x@(Sell seller2 sellPrice2) l r) 
+  | sellPrice2 <= buyPrice2 = Just x 
+  | otherwise = case (compare' (Buy buyer buyPrice2) l) of
+                    Just match -> Just match
+                    Nothing -> compare' (Buy buyer buyPrice2) r 
+    where 
+      maxprice = undefined -- largestPrice y
+-}
 
 printBids :: SkewHeap Bid -> IO ()
-printBids sh =  putStrLn(listToString ((toSortedList sh)))
+printBids sh =  putStrLn(listToString (toSortedList sh))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
-
-t1 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6), (Buy "oo" 18), (Buy "gg" 0)] -- nah it dosn't make sense, i = 0,2 försvinner av någon anledning
-t2 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Buy "c" 6),(Sell "k" 2),(Sell "o" 6),(Buy "k2" 6),(Sell "k1" 2),(Sell "ä" 88),(Buy "åå" 76),(Sell "å" 2), (Sell "b" 7), (Sell "B" 7), (Sell "b" 7), (Buy "a" 2)]
-t3 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(Sell "b" 6),(Buy "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6)]
-t4 = trade [(Sell "a" 2),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Buy "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "j" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Sell "d8" 6),(Sell "g" 4),(Sell "b" 6),(Sell "c" 6),(Sell "y" 17),(Sell "d" 6),(Sell "c" 6),(Sell "k" 2),(Buy "gh" 6)]
-t5 = trade [(Buy "a" 2),(Buy "j" 6),(Buy "g" 4),(NewBuy "j" 6 7),(Buy "c" 6),(Buy "y" 17),(Buy "d" 6),(Buy "c" 6),(Buy "k" 2),(Buy "d8" 6),(Buy "c" 6),(Buy "k" 2),(Buy "o" 6),(Buy "k2" 6),(Buy "k1" 2),(Buy "ä" 88),(Buy "åå" 76),(Buy "å" 2), (Buy "b" 7), (Buy "B" 7), (Buy "b" 7), (Buy "a" 2)]
-t6 = trade [(Buy "a" 2),(Buy "b" 6),(Buy "c" 4),(Sell "d" 6),(Buy "e" 6),(Sell "f" 17),(Sell "g" 6),(Buy "h" 6),(Sell "i" 2),(Sell "j" 6)]
-t7 = trade [(Sell "a" 2),(Sell "b" 6),(Sell "c" 4),(Sell "d" 6),(Sell "e" 6),(Sell "f" 17),(Sell "g" 6),(Sell "h" 6),(Sell "i" 2),(Sell "j" 6), (Buy "k" 177)]
-t8 = trade [(Sell "a" 1),(Sell "b" 1),(Sell "c" 1),(Sell "d" 1),(Sell "e" 1),(Sell "f" 1),(Sell "g" 1),(Sell "h" 1),(Sell "i" 1),(Sell "j" 1), (Buy "k" 1)] --10 sell, 1 buy
-t9 = trade [(Buy "a" 2), (Buy "j" 6), (Buy "g" 4),(Sell "b" 6)]
-t10 = trade [(Buy "a" 2),(Buy "b" 3),(Buy "c" 9),(Sell "d" 5),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1),(Sell "d" 1)]
--- HEAD
-t11 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (Sell "p5" 65536)]
-t12 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (NewSell "p0" 32768 16384)]
--- =======
---t11 = trade [(Sell "p0" 65536),(Buy "p1" 32768),(Buy "p2" 16384),(NewBuy "p1" 32768 24576),(NewSell "p0" 65536 32768),(NewSell "p0" 32768 16384)]
---t12 = trade [(Sell "p0" 10),(Buy "p1" 15),(Sell "p0" 15),(Buy "p1" 10),(Buy "p2" 13),(NewSell "p0" 15 8)]
--- >>>>>>> 1fa6dfe (test)

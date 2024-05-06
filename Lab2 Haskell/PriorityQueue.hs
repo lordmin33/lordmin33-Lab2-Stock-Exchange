@@ -63,3 +63,12 @@ deleteM y (MaxNode x l r)
 toSortedListM :: Ord a => MaxHeap a -> [a] -- O(n*log(n))
 toSortedListM EmptyMax          = []
 toSortedListM (MaxNode x l r)   = x : toSortedListM (mergeMax l r)
+
+
+-----------------
+findLargest :: Ord a => SkewHeap a -> Maybe a
+findLargest heap = case extractMin heap of
+    Nothing -> Nothing -- If the heap is empty, return Nothing
+    Just (minElem, restHeap) -> case restHeap of
+        Empty -> Just minElem -- If the rest of the heap is empty, minElem is the largest value
+        _     -> findLargest restHeap -- Otherwise, continue searching in the rest of the heap
