@@ -20,7 +20,7 @@ type Price = Integer
 type BuyBid = Buy Person Price 
 type SellBid = Sell Person Price 
 
-type BuyQueue  = SkewHeap BuyBid
+type BuyQueue  = MaxHeap BuyBid
 type SellQueue = SkewHeap SellBid
 
 data OrderBook = OrderBook { 

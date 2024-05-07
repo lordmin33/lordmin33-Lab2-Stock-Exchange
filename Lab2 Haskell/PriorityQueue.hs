@@ -44,6 +44,10 @@ data MaxHeap a = EmptyMax | MaxNode a (MaxHeap a) (MaxHeap a) deriving (Show)
 singletonM :: Ord a => a -> MaxHeap a -- O(1)
 singletonM x = MaxNode x EmptyMax EmptyMax
 
+extractMinM :: Ord a => MaxHeap a -> Maybe (a, MaxHeap a) -- O(log n)
+extractMinM EmptyMax        = Nothing
+extractMinM (MaxNode x l r) = Just (x, mergeMax l r)
+
 mergeMax :: Ord a => MaxHeap a -> MaxHeap a -> MaxHeap a -- O(log(n))
 mergeMax h1 EmptyMax = h1
 mergeMax EmptyMax h2 = h2
