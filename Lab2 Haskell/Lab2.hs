@@ -180,7 +180,7 @@ processSells book@(OrderBook buy sell) bid@(Sell person askprice) xs =
     Just (b@(Buy buyer price), updatedBuyQueue) -> 
       if askprice <= price 
         then --let updatedBook = book {buyQueue = updatedBuyQueue}
-              ((OrderBook updatedBuyQueue sell), xs ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
+              ((OrderBook updatedBuyQueue sell), xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)])
       else  --let updatedBook' = book {buyQueue = insert b updatedBuyQueue}
               let updatedBook = insertBid bid $ insertBid b (OrderBook updatedBuyQueue sell)
                in (updatedBook, xs)
