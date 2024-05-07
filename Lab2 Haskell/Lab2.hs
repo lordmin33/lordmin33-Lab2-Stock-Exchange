@@ -17,11 +17,11 @@ data Bid
 type Person = String
 type Price = Integer
 
-data Buy = Buy Person Price 
-data Sell = Sell Person Price 
+type BuyBid = Bid
+type SellBid = Bid
 
-type BuyQueue  = SkewHeap Buy
-type SellQueue = SkewHeap Sell
+type BuyQueue  = SkewHeap BuyBid
+type SellQueue = SkewHeap SellBid
 
 data OrderBook = OrderBook { 
   buyQueue  :: BuyQueue, --somehow make the buyQueue into a max Skewheap
@@ -152,13 +152,13 @@ processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
         then --let updatedBook = book {sellQueue = updatedSellQueue}
               ((OrderBook buy updatedSellQueue), xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
       else   --let updatedBook' = book {sellQueue = insert s updatedSellQueue}
-            let updatedBook = insertBid bid $ insert s (OrderBook buy updatedSellQueue)
+            let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)
               in (updatedBook, xs)
               --((OrderBook buy (insert s updatedSellQueue)), xs) -- ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
 
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processSells book bid@(Sell person 0) xs = (book, xs)
-processSells book@(OrderBook buy sell) bid@(Buy person price) xs =
+processSells book@(OrderBook buy sell) bid@(Sell person price) xs =
   case extractMin buy of
     Nothing -> (book, xs)
     Just (b@(Buy buyer askPrice), updatedBuyQueue) -> 
@@ -166,7 +166,9 @@ processSells book@(OrderBook buy sell) bid@(Buy person price) xs =
         then --let updatedBook = book {buyQueue = updatedBuyQueue}
               ((OrderBook updatedBuyQueue sell), xs ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
       else  --let updatedBook' = book {buyQueue = insert b updatedBuyQueue}
-               ((OrderBook (insert b updatedBuyQueue)) sell, xs) -- ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
+              let updatedBook = insertBid bid $ insert b (OrderBook updatedBuyQueue sell)
+               in (updatedBook sell, xs)
+                --((OrderBook (insert b updatedBuyQueue)) sell, xs) -- ++ [(show person ++ " buys from " ++ show buyer ++ " for " ++ show price)])
 
 processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
