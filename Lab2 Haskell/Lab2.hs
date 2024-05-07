@@ -17,17 +17,47 @@ data Bid
 type Person = String
 type Price = Integer
 
-type BuyBid = Bid
+type BuyBid =  Bid
 type SellBid = Bid
 
-type BuyQueue  = MaxHeap BuyBid
+type BuyQueue  = SkewHeap BuyBid
 type SellQueue = SkewHeap SellBid
 
 data OrderBook = OrderBook { 
-  buyQueue  :: BuyQueue, --somehow make the buyQueue into a max Skewheap
-  sellQueue :: SellQueue  -- that way we don't need to use compare' anymore since 
-  }                     -- we will compare min from sellQueue and max from buyQueue by using extracteMin
+  buyQueue  :: BuyQueue,
+  sellQueue :: SellQueue  
+}                     
+{-
+--newtype BuyQueue a = BuyQueue (SkewHeap a) deriving (Eq, Show)
 
+
+-- Define the Ord instance for FlipOrd
+instance Ord a => Ord (BuyQueue) where
+    compare = flip compare
+
+-- Define the Bounded instance for FlipOrd
+instance Bounded a => Bounded (BuyQueue) where
+    minBound = BuyQueue maxBound
+    maxBound = BuyQueue minBound
+-}
+{-
+instance Ord BuyBid where
+  compare (Buy _ price1) (Buy _ price2) = compare price2 price1
+  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
+
+instance Ord SellBid where
+  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
+  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
+
+instance Ord (SkewHeap BuyBid) where
+  compare = compare
+
+instance Bounded (SkewHeap BuyBid) where
+  minBound = Empty
+  maxBound = undefined  -- Not sure what maxBound should be for a skew heap
+-}
+-- Similar instances for SellBid and SkewHeap SellBid
+{-
 instance Ord Bid where
   compare (Buy _ price1) (Buy _ price2) = compare price1 price2
   compare (Buy _ _) (Sell _ _) = LT
@@ -41,34 +71,25 @@ instance Ord Bid where
   compare (NewBuy _ _ _) (Sell _ _) = GT
   compare (NewSell _ _ _) (Buy _ _) = GT
   compare (NewSell _ _ _) (Sell _ _) = GT
-
+-}
 
 -- Define Ord instance for Bid
-{- 
+
 instance Ord Bid where
-  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  -- Reverse order for max heap
+  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  --Reverse order for max heap
   compare (Sell _ price1) (Sell _ price2) = compare price1 price2
   compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
--}
+
 {-
 -- Define custom Ord instances for BuyBid and SellBid
 instance Ord BuyBid where
-  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  -- Normal ordering for buy bids
+  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  --Reverse ordering for buy bids
   compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
 
 instance Ord SellBid where
-  compare (Sell _ price1) (Sell _ price2) = compare price1 price2  -- Reverse ordering for sell bids
+  compare (Sell _ price1) (Sell _ price2) = compare price1 price2  -- Normal ordering for sell bids
   compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
 -}
-
--- Example function to insert a bid into the order book
-insertBid :: Bid -> OrderBook -> OrderBook
-insertBid bid (OrderBook buy sell) =
-  case bid of
-    Buy _ _ -> OrderBook (insertM bid buy) sell
-    Sell _ _ -> OrderBook buy (insert bid sell)
-    _ -> error "Unsupported bid type"
-
 
 instance Show Bid where
   show (Buy person price)       = person ++ " " ++ show price
@@ -129,7 +150,7 @@ main = do
 
 trade :: [Bid] -> IO()
 trade bids = do
-  let initialState = OrderBook {buyQueue = EmptyMax, sellQueue = Empty }
+  let initialState = OrderBook {buyQueue = Empty, sellQueue = Empty }
   orderBook initialState bids
 
 -- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
@@ -144,9 +165,9 @@ orderBook book bids = do
 
   putStrLn "Order book:"
   putStr "Sellers: " >> printBids (sellQueue finalOrderBook)
-  putStr "Buyers: " >> printBids' (buyQueue finalOrderBook)
+  putStr "Buyers: " >> printBids (buyQueue finalOrderBook)
 
-processBids :: OrderBook -> [Bid] ->  [String] -> (OrderBook, [String]) --O(n), goes until the list is empty
+processBids :: OrderBook -> [Bid] ->  [String] -> (OrderBook, [String]) -- process the bids until the list is empty
 processBids book [] xs = (book, xs) 
 processBids book (bid:rest) xs = case bid of 
     Buy person price                  -> let (oBook, ys) = (processBuys book bid xs)
@@ -175,7 +196,7 @@ processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processSells book bid@(Sell person 0) xs = (book, xs)
 processSells book@(OrderBook buy sell) bid@(Sell person askprice) xs =
-  case extractMinM buy of
+  case extractMin buy of
     Nothing -> (insertBid bid book, xs)
     Just (b@(Buy buyer price), updatedBuyQueue) -> 
       if askprice <= price 
@@ -188,13 +209,21 @@ processSells book@(OrderBook buy sell) bid@(Sell person askprice) xs =
 
 processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
- let updatedBuyBid = deleteM (Buy person oldPrice) (buyQueue book)
+ let updatedBuyBid = delete (Buy person oldPrice) buy
    in (processBuys (OrderBook updatedBuyBid sell) (Buy person newPrice) xs)
 
 processNewSell :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) xs =
-  let updatedSellBid = delete (Sell person oldPrice) (sellQueue book)
+  let updatedSellBid = delete (Sell person oldPrice) sell
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs) 
+
+-- insert bid into the OrderBook 
+insertBid :: Bid -> OrderBook -> OrderBook
+insertBid bid (OrderBook buy sell) =
+  case bid of
+    Buy _ _ -> OrderBook (insert bid buy) sell
+    Sell _ _ -> OrderBook buy (insert bid sell)
+    _ -> error "Unsupported bid type"
 
 printBids :: SkewHeap Bid -> IO ()
 printBids sh =  putStrLn(listToString (toSortedList sh))

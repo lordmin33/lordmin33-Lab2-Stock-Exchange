@@ -150,32 +150,24 @@ processBids book (bid:rest) xs = case bid of
       in processBids oBook rest ys
 
 processBuys :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
-processBuys book bid@(Buy person 0) xs = (book,xs)
-processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
-  case extractMin sell of
-    Nothing -> (insertBid bid book, xs)
-    Just (s@(Sell seller askPrice), updatedSellQueue) -> 
-      if askPrice <= price
-        then --let updatedBook = book {sellQueue = updatedSellQueue}
-              ((OrderBook buy updatedSellQueue), xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
-      else   --let updatedBook' = book {sellQueue = insert s updatedSellQueue}
-            let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)
-              in (updatedBook, xs)
-              --((OrderBook buy (insert s updatedSellQueue)), xs)
+processBuys book bid@(Buy _ 0) xs = (book, xs)
+processBuys (OrderBook buy sell) bid@(Buy person price) xs =
+  processTransaction buy sell person price bid xs
 
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
-processSells book bid@(Sell person 0) xs = (book, xs)
-processSells book@(OrderBook buy sell) bid@(Sell person askprice) xs =
-  case extractMinM buy of
-    Nothing -> (insertBid bid book, xs)
-    Just (b@(Buy buyer price), updatedBuyQueue) -> 
-      if askprice <= price 
-        then --let updatedBook = book {buyQueue = updatedBuyQueue}
-              ((OrderBook updatedBuyQueue sell), xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)])
-      else  --let updatedBook' = book {buyQueue = insert b updatedBuyQueue}
-              let updatedBook = insertBid bid $ insertBid b (OrderBook updatedBuyQueue sell)
-               in (updatedBook, xs)
-                --((OrderBook (insert b updatedBuyQueue)) sell, xs) 
+processSells book@(OrderBook buy sell) bid@(Sell _ 0) xs = (book, xs)
+processSells (OrderBook buy sell) bid@(Sell person price) xs =
+  processTransaction buy sell person price bid xs
+
+processTransaction :: BuyQueue -> SellQueue -> Person -> Price -> Bid -> [String] -> (OrderBook, [String])
+processTransaction buy sell person price bid xs =
+  case extractMin sell of
+    Nothing -> (insertBid bid (OrderBook buy sell), xs)
+    Just (s@(Sell seller askPrice), updatedSellQueue) ->
+      if askPrice <= price
+        then let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)
+             in (updatedBook, xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
+        else (OrderBook buy updatedSellQueue, xs)
 
 processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
