@@ -59,7 +59,7 @@ instance Ord BuyBid where
 instance Ord SellBid where
   compare (Sell _ price1) (Sell _ price2) = compare price1 price2  -- Reverse ordering for sell bids
   compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
--}
+--}
 
 -- Example function to insert a bid into the order book
 insertBid :: Bid -> OrderBook -> OrderBook
@@ -67,7 +67,6 @@ insertBid bid (OrderBook buy sell) =
   case bid of
     Buy _ _ -> OrderBook (insertM bid buy) sell
     Sell _ _ -> OrderBook buy (insert bid sell)
-    _ -> error "Unsupported bid type"
 
 
 instance Show Bid where
@@ -132,9 +131,8 @@ trade bids = do
   let initialState = OrderBook {buyQueue = EmptyMax, sellQueue = Empty }
   orderBook initialState bids
 
--- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
+
 orderBook :: OrderBook -> [Bid] -> IO()
--- orderBook book [] = book
 orderBook book bids = do
   let initialList = [] 
   let (finalOrderBook, xs) = processBids book bids initialList
@@ -204,6 +202,3 @@ printBids' sh =  putStrLn(listToString (toSortedListM sh))
 
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
-
-t11 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (Sell "p5" 65536)]
-t12 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (NewSell "p0" 32768 16384)]
