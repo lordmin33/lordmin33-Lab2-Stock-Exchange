@@ -5,7 +5,6 @@ import Control.Applicative
 import System.Environment
 import System.IO
 import PriorityQueue
---import TheOrderBook
 
 -- | Bids.
 data Bid
@@ -27,55 +26,12 @@ data OrderBook = OrderBook {
   buyQueue  :: BuyQueue,
   sellQueue :: SellQueue  
 }                     
-{-
---newtype BuyQueue a = BuyQueue (SkewHeap a) deriving (Eq, Show)
-
-
--- Define the Ord instance for FlipOrd
-instance Ord a => Ord (BuyQueue) where
-    compare = flip compare
-
--- Define the Bounded instance for FlipOrd
-instance Bounded a => Bounded (BuyQueue) where
-    minBound = BuyQueue maxBound
-    maxBound = BuyQueue minBound
--}
-{-
-instance Ord BuyBid where
-  compare (Buy _ price1) (Buy _ price2) = compare price2 price1
-  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
-
-instance Ord SellBid where
-  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
-
-instance Ord (SkewHeap BuyBid) where
-  compare = compare
-
-instance Bounded (SkewHeap BuyBid) where
-  minBound = Empty
-  maxBound = undefined  -- Not sure what maxBound should be for a skew heap
--}
--- Similar instances for SellBid and SkewHeap SellBid
-
 
 -- Define Ord instance for Bid
-
 instance Ord Bid where
-  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  --Reverse order for max heap
+  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  --Reverse order for max SkewHeap
   compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
-
-{-
--- Define custom Ord instances for BuyBid and SellBid
-instance Ord BuyBid where
-  compare (Buy _ price1) (Buy _ price2) = compare price2 price1  --Reverse ordering for buy bids
-  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
-
-instance Ord SellBid where
-  compare (Sell _ price1) (Sell _ price2) = compare price1 price2  -- Normal ordering for sell bids
-  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
--}
+  compare _ _ = error "not allowed"  -- Just for completeness, other cases don't matter for OrderBook
 
 instance Show Bid where
   show (Buy person price)       = person ++ " " ++ show price
@@ -164,29 +120,34 @@ processBids book (bid:rest) xs = case bid of
     NewSell person oldPrice newPrice  -> let (oBook, ys) = (processNewSell book bid xs)
       in processBids oBook rest ys
 
+-- Could make a general function for processBuys and processSells by 
+-- first adding the new bid to the heap then comparing maxBid form buy and minBid from sell
+-- if price match then do the process that 
+-- else insert back into the heaps
+-- we did not have time to implement it 
 processBuys :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processBuys book bid@(Buy person 0) xs = (book,xs)
 processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
   case extractMin sell of
-    Nothing -> (insertBid bid book, xs)
+    Nothing -> (insertBid bid book, xs) -- insert bid if sell is empty
     Just (s@(Sell seller askPrice), updatedSellQueue) -> 
-      if askPrice <= price
-        then ((OrderBook buy updatedSellQueue), xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
-      else   let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)
-              in (updatedBook, xs)
-              
+      if askPrice <= price -- compare the prices
+        then  let transaction = [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)]
+            in ((OrderBook buy updatedSellQueue), xs ++ transaction) -- update the orderbook and the string list
+      else   let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)-- insert sell min back into heap if prices is not matching 
+              in (updatedBook, xs)                                                         -- insert bid in its corresponding heap 
 
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processSells book bid@(Sell person 0) xs = (book, xs)
 processSells book@(OrderBook buy sell) bid@(Sell person askprice) xs =
   case extractMin buy of
-    Nothing -> (insertBid bid book, xs)
+    Nothing -> (insertBid bid book, xs) -- insert bid if buy is empty
     Just (b@(Buy buyer price), updatedBuyQueue) -> 
-      if askprice <= price 
-        then ((OrderBook updatedBuyQueue sell), xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)])
-      else  let updatedBook = insertBid bid $ insertBid b (OrderBook updatedBuyQueue sell)
-               in (updatedBook, xs)
-               
+      if askprice <= price -- compare the prices
+        then let transaction = [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)]
+            in ((OrderBook updatedBuyQueue sell), xs ++ transaction)  -- update the orderbook and the string list
+      else  let updatedBook = insertBid bid $ insertBid b (OrderBook updatedBuyQueue sell)--insert buy min back into heap if prices is not matching
+               in (updatedBook, xs)                                                       -- insert bid in its corresponding heap 
 
 processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
@@ -198,7 +159,7 @@ processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) 
   let updatedSellBid = delete (Sell person oldPrice) sell
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs) 
 
--- insert bid into the OrderBook 
+-- insert bid into the OrderBook in its corresponding heap
 insertBid :: Bid -> OrderBook -> OrderBook
 insertBid bid (OrderBook buy sell) =
   case bid of
@@ -209,11 +170,5 @@ insertBid bid (OrderBook buy sell) =
 printBids :: SkewHeap Bid -> IO ()
 printBids sh =  putStrLn(listToString (toSortedList sh))
 
-printBids' :: MaxHeap Bid -> IO ()
-printBids' sh =  putStrLn(listToString (toSortedListM sh))
-
 listToString :: Show a => [a] -> String
 listToString xs = concat $ intersperse ", " (map show xs) 
-
-t11 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (Sell "p5" 65536)]
-t12 = trade [(Sell "p0" 65536), (Buy "p1" 32768), (Buy "p2" 16384), (NewBuy "p1" 32768 24576), (NewSell "p0" 65536 32768), (NewSell "p0" 32768 16384)]
