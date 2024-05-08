@@ -17,7 +17,7 @@ data Bid
 type Person = String
 type Price = Integer
 
-type BuyBid =  Bid
+type BuyBid = Bid
 type SellBid = Bid
 
 type BuyQueue  = SkewHeap BuyBid
@@ -47,16 +47,13 @@ instance Ord BuyBid where
 
 instance Ord SellBid where
   compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
-
-instance Ord (SkewHeap BuyBid) where
-  compare = compare
-
-instance Bounded (SkewHeap BuyBid) where
-  minBound = Empty
-  maxBound = undefined  -- Not sure what maxBound should be for a skew heap
--}
--- Similar instances for SellBid and SkewHeap SellBid
+  compare (Sell _ _) (NewBuy _ _ _) = LT
+  compare (Sell _ _) (NewSell _ _ _) = LT
+  compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
+  compare (NewBuy _ _ _) (Buy _ _) = GT
+  compare (NewBuy _ _ _) (Sell _ _) = GT
+  compare (NewSell _ _ _) (Buy _ _) = GT
+  compare (NewSell _ _ _) (Sell _ _) = GT
 
 
 -- Define Ord instance for Bid

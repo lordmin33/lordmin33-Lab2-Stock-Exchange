@@ -12,7 +12,7 @@ singleton :: Ord a => a -> SkewHeap a -- O(1)
 singleton x = Node x Empty Empty
 
 -- merges two skew heaps into one
-merge :: Ord a => SkewHeap a -> SkewHeap a -> SkewHeap a -- O(n)
+merge :: Ord a => SkewHeap a -> SkewHeap a -> SkewHeap a -- O(log n)
 merge Empty Empty = Empty
 merge h1 Empty  = h1
 merge Empty h2  = h2
@@ -25,7 +25,7 @@ insert :: Ord a => a -> SkewHeap a -> SkewHeap a -- O(log(n))
 insert x sh = merge (singleton x) sh 
 
 -- Extract the minimum value of the heap and merge the rest  
-extractMin :: Ord a => SkewHeap a -> Maybe (a, SkewHeap a) -- O(log n)
+extractMin :: Ord a => SkewHeap a -> Maybe (a, SkewHeap a) -- O(log (n))
 extractMin Empty        = Nothing
 extractMin (Node x l r) = Just (x, merge l r)
 
@@ -36,7 +36,7 @@ delete y (Node x l r)
     | y == x    = merge l r -- If the root value equals the value to delete, return Just x and merge the left and right subtrees
     | otherwise = Node x (delete y l) (delete y r)  -- If the value to delete is greater than the root value, recursively delete from the right subtree
 
-toSortedList :: Ord a => SkewHeap a -> [a] -- O(n)
+toSortedList :: Ord a => SkewHeap a -> [a] -- O(n*log(n))
 toSortedList Empty          = []
 toSortedList (Node x l r)   = x : toSortedList (merge l r) 
 
