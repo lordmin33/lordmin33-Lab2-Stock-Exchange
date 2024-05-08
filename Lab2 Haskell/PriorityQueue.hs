@@ -5,8 +5,8 @@ data SkewHeap a = Empty
                 | Node a (SkewHeap a) (SkewHeap a) deriving (Show, Eq)
 
 
-emptyHeap :: SkewHeap a --O(1)
-emptyHeap = Empty
+emptySkewHeap :: SkewHeap a --O(1)
+emptySkewHeap = Empty
 -- used when inserting a new element to the heap
 singleton :: Ord a => a -> SkewHeap a -- O(1)
 singleton x = Node x Empty Empty

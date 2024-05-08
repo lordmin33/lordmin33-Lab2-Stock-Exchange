@@ -17,7 +17,7 @@ data Bid
 type Person = String
 type Price = Integer
 
-type BuyBid = Bid
+type BuyBid =  Bid
 type SellBid = Bid
 
 type BuyQueue  = SkewHeap BuyBid
@@ -47,13 +47,16 @@ instance Ord BuyBid where
 
 instance Ord SellBid where
   compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare (Sell _ _) (NewBuy _ _ _) = LT
-  compare (Sell _ _) (NewSell _ _ _) = LT
-  compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
-  compare (NewBuy _ _ _) (Buy _ _) = GT
-  compare (NewBuy _ _ _) (Sell _ _) = GT
-  compare (NewSell _ _ _) (Buy _ _) = GT
-  compare (NewSell _ _ _) (Sell _ _) = GT
+  compare _ _ = EQ  -- Just for completeness, other cases don't matter for OrderBook
+
+instance Ord (SkewHeap BuyBid) where
+  compare = compare
+
+instance Bounded (SkewHeap BuyBid) where
+  minBound = Empty
+  maxBound = undefined  -- Not sure what maxBound should be for a skew heap
+-}
+-- Similar instances for SellBid and SkewHeap SellBid
 
 
 -- Define Ord instance for Bid
@@ -133,12 +136,11 @@ main = do
 
 trade :: [Bid] -> IO()
 trade bids = do
-  let initialState = OrderBook emptyHeap emptyHeap
+  let initialState = OrderBook emptySkewHeap emptySkewHeap
   orderBook initialState bids
 
 -- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
 orderBook :: OrderBook -> [Bid] -> IO()
--- orderBook book [] = book
 orderBook book bids = do
   let initialList = [] 
   let (finalOrderBook, xs) = processBids book bids initialList

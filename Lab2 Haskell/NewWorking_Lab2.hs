@@ -184,7 +184,7 @@ processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs
 
 processNewSell :: OrderBook -> Bid ->  [String] -> (OrderBook, [String])
 processNewSell book@(OrderBook buy sell) bid@(NewSell person oldPrice newPrice) xs =
-  let updatedSellBid = delete (Sell person oldPrice) sell
+  let updatedSellBid = delete (Sell person oldPrice) 
    in (processSells (OrderBook buy updatedSellBid) (Sell person newPrice) xs) 
 
 -- insert bid into the OrderBook 
