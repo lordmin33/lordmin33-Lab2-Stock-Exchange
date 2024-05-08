@@ -17,25 +17,34 @@ data Bid
 type Person = String
 type Price = Integer
 
-type BuyBid = Bid
-type SellBid = Bid
-
 type BuyQueue  = MaxHeap BuyBid
 type SellQueue = SkewHeap SellBid
 
 data OrderBook = OrderBook { 
-  buyQueue  :: BuyQueue, --somehow make the buyQueue into a max Skewheap
-  sellQueue :: SellQueue  -- that way we don't need to use compare' anymore since 
-  }                     -- we will compare min from sellQueue and max from buyQueue by using extracteMin
+  buyBid  :: BuyBid,
+  sellBid :: SellBid 
+  }
+
+data SellBid = SellBid Person Price
+data BuyBid = BuyBid Person Price
+
+--instance Show Price where
+--  show (Price p) = show p
+
+instance Eq Bid where
+    (Buy s1 i1) == (Buy s2 i2) = s1 == s2 && i1 == i2
+    (Sell s1 i1) == (Sell s2 i2) = s1 == s2 && i1 == i2
+    _ == _ = False
+
+instance Show Bid where
+  show (Buy person price)       = person ++ " " ++ show price
+  show (Sell person price)      = person ++ " " ++ show price
 
 instance Ord Bid where
   compare (Buy _ price1) (Buy _ price2) = compare price1 price2
-  compare (Buy _ _) (Sell _ _) = LT
-  compare (Buy _ _) (NewBuy _ _ _) = LT
-  compare (Buy _ _) (NewSell _ _ _) = LT
+  compare (Buy _ _) _ = LT
   compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare (Sell _ _) (NewBuy _ _ _) = LT
-  compare (Sell _ _) (NewSell _ _ _) = LT
+  compare (Sell _ _) _ = LT
   compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
   compare (NewBuy _ _ _) (Buy _ _) = GT
   compare (NewBuy _ _ _) (Sell _ _) = GT
