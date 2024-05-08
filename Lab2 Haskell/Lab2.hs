@@ -57,21 +57,7 @@ instance Bounded (SkewHeap BuyBid) where
   maxBound = undefined  -- Not sure what maxBound should be for a skew heap
 -}
 -- Similar instances for SellBid and SkewHeap SellBid
-{-
-instance Ord Bid where
-  compare (Buy _ price1) (Buy _ price2) = compare price1 price2
-  compare (Buy _ _) (Sell _ _) = LT
-  compare (Buy _ _) (NewBuy _ _ _) = LT
-  compare (Buy _ _) (NewSell _ _ _) = LT
-  compare (Sell _ price1) (Sell _ price2) = compare price1 price2
-  compare (Sell _ _) (NewBuy _ _ _) = LT
-  compare (Sell _ _) (NewSell _ _ _) = LT
-  compare (NewBuy _ _ _) (NewSell _ _ _) = EQ
-  compare (NewBuy _ _ _) (Buy _ _) = GT
-  compare (NewBuy _ _ _) (Sell _ _) = GT
-  compare (NewSell _ _ _) (Buy _ _) = GT
-  compare (NewSell _ _ _) (Sell _ _) = GT
--}
+
 
 -- Define Ord instance for Bid
 
@@ -150,7 +136,7 @@ main = do
 
 trade :: [Bid] -> IO()
 trade bids = do
-  let initialState = OrderBook {buyQueue = Empty, sellQueue = Empty }
+  let initialState = OrderBook emptyHeap emptyHeap
   orderBook initialState bids
 
 -- Maybe put everything in the book and then check if there exist a buyer for the seller? probably somewhat hard to implement
