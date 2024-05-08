@@ -171,12 +171,10 @@ processBuys book@(OrderBook buy sell) bid@(Buy person price) xs =
     Nothing -> (insertBid bid book, xs)
     Just (s@(Sell seller askPrice), updatedSellQueue) -> 
       if askPrice <= price
-        then --let updatedBook = book {sellQueue = updatedSellQueue}
-              ((OrderBook buy updatedSellQueue), xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
-      else   --let updatedBook' = book {sellQueue = insert s updatedSellQueue}
-            let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)
+        then ((OrderBook buy updatedSellQueue), xs ++ [(show person ++ " buys from " ++ show seller ++ " for " ++ show price)])
+      else   let updatedBook = insertBid bid $ insertBid s (OrderBook buy updatedSellQueue)
               in (updatedBook, xs)
-              --((OrderBook buy (insert s updatedSellQueue)), xs)
+              
 
 processSells :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processSells book bid@(Sell person 0) xs = (book, xs)
@@ -185,12 +183,10 @@ processSells book@(OrderBook buy sell) bid@(Sell person askprice) xs =
     Nothing -> (insertBid bid book, xs)
     Just (b@(Buy buyer price), updatedBuyQueue) -> 
       if askprice <= price 
-        then --let updatedBook = book {buyQueue = updatedBuyQueue}
-              ((OrderBook updatedBuyQueue sell), xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)])
-      else  --let updatedBook' = book {buyQueue = insert b updatedBuyQueue}
-              let updatedBook = insertBid bid $ insertBid b (OrderBook updatedBuyQueue sell)
+        then ((OrderBook updatedBuyQueue sell), xs ++ [(show buyer ++ " buys from " ++ show person ++ " for " ++ show price)])
+      else  let updatedBook = insertBid bid $ insertBid b (OrderBook updatedBuyQueue sell)
                in (updatedBook, xs)
-                --((OrderBook (insert b updatedBuyQueue)) sell, xs) 
+               
 
 processNewBuy :: OrderBook -> Bid -> [String] -> (OrderBook, [String])
 processNewBuy book@(OrderBook buy sell) bid@(NewBuy person oldPrice newPrice) xs = 
